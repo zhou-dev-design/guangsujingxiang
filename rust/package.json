@@ -1,0 +1,14 @@
+{
+  "name": "lightmirror",
+  "private": true,
+  "version": "3.0.0",
+  "description": "光速镜像 · GitHub 下载加速器（Rust + Tauri）",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build --no-bundle"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

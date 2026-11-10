@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 底部选择条：整块不透明盖住下面的滚动内容，顶上留一条细线分隔，
+     否则记录滚到条下面时看不出这是另一层，像被裁掉一半 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:gravity="top" android:height="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/cLine" />
+        </shape>
+    </item>
+    <item android:top="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/cBg" />
+        </shape>
+    </item>
+</layer-list>

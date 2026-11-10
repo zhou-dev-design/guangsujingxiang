@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/screenHistory"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_history"
+                android:textColor="?attr/cText"
+                android:textSize="?attr/dT4"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/historySub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:minHeight="32dp"
+                android:text="共 0 条 · 只保存在本机"
+                android:textColor="?attr/cText3"
+                android:textSize="?attr/dT1"
+                android:background="@android:color/transparent"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btnHistoryPick"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_chip"
+            android:gravity="center"
+            android:minWidth="62dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="选择"
+            android:textColor="?attr/cChipText"
+            android:textSize="?attr/dT1" />
+
+        <ImageView
+            android:id="@+id/btnClear"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_ico_box"
+            android:padding="11dp"
+            android:src="@drawable/ic_trash"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="清空记录" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ScrollView
+            android:id="@+id/historyScroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:scrollbars="none"
+            android:clipToPadding="false"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="16dp">
+
+            <LinearLayout
+                android:id="@+id/historyList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <!-- 选择模式才出现的操作条：全选 / 删除选中 -->
+        <LinearLayout
+            android:id="@+id/historyBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            android:background="@drawable/bg_history_bar"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp">
+
+            <TextView
+                android:id="@+id/btnSelectAll"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_chip"
+                android:gravity="center"
+                android:minWidth="72dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="全选"
+                android:textColor="?attr/cChipText"
+                android:textSize="?attr/dT2" />
+
+            <TextView
+                android:id="@+id/btnDeleteSel"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_primary"
+                android:gravity="center"
+                android:text="删除选中"
+                android:textColor="?attr/cOnPrimary"
+                android:textSize="?attr/dT2" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

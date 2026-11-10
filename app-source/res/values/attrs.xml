@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 语义色板：深色 / 浅色 / 墨水屏黑白 三套主题各给一组值，布局只引用属性 -->
+    <attr name="cBg" format="color" />
+    <attr name="cSurface" format="color" />
+    <attr name="cSurface2" format="color" />
+    <attr name="cLine" format="color" />
+    <attr name="cLineStrong" format="color" />
+    <attr name="cText" format="color" />
+    <attr name="cText2" format="color" />
+    <attr name="cText3" format="color" />
+    <attr name="cPrimary" format="color" />
+    <attr name="cPrimarySoft" format="color" />
+    <attr name="cPrimaryLine" format="color" />
+    <attr name="cAccent" format="color" />
+    <attr name="cAccentSoft" format="color" />
+    <attr name="cAccentLine" format="color" />
+    <attr name="cWarn" format="color" />
+    <attr name="cDanger" format="color" />
+    <attr name="cDangerSoft" format="color" />
+    <attr name="cOnPrimary" format="color" />
+    <attr name="cTabBar" format="color" />
+    <attr name="cChipText" format="color" />
+    <attr name="cDlStart" format="color" />
+    <attr name="cDlEnd" format="color" />
+    <attr name="cTrack" format="color" />
+    <attr name="cGradStart" format="color" />
+    <attr name="cGradEnd" format="color" />
+    <attr name="cSwitchTrackOn" format="color" />
+    <attr name="cSwitchTrackOff" format="color" />
+    <attr name="cThumbOn" format="color" />
+    <attr name="cThumbOff" format="color" />
+
+    <!-- true = 墨水屏黑白模式 -->
+    <attr name="monoMode" format="boolean" />
+
+    <!-- 字号与密度相关的尺寸：墨水屏 300dpi 上小字容易发虚，统一放大 2sp -->
+    <attr name="dT0" format="dimension" />   <!-- 角标、极小字 -->
+    <attr name="dT1" format="dimension" />   <!-- 说明文字 -->
+    <attr name="dT2" format="dimension" />   <!-- 正文 -->
+    <attr name="dT3" format="dimension" />   <!-- 小标题 -->
+    <attr name="dT4" format="dimension" />   <!-- 页面标题 -->
+    <attr name="dT5" format="dimension" />   <!-- 主数值 -->
+    <attr name="dTab" format="dimension" />  <!-- 底部标签 -->
+    <attr name="dBtnH" format="dimension" /> <!-- 按钮高度 -->
+    <attr name="dRowPad" format="dimension" /><!-- 列表行内边距 -->
+</resources>

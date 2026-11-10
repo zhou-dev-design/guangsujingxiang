@@ -1,0 +1,13 @@
+# 构建中间产物（成品在 release/，需要提交）
+rust/src-tauri/target/
+rust/src-tauri/gen/
+rust/node_modules/
+app-source/build/
+desktop/build/
+desktop/dist/
+desktop/*.spec
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+Thumbs.db

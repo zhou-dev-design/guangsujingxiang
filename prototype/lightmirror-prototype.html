@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>光速镜像 · GitHub 下载器 高保真原型</title>
+<style>
+  :root{
+    /* ---------- 色彩 ---------- */
+    --bg:#0B0F14;
+    --surface:#141B24;
+    --surface-2:#1B242F;
+    --line:rgba(255,255,255,.08);
+    --line-strong:rgba(255,255,255,.14);
+    --text:#E8EEF6;
+    --text-2:#8B9AAC;
+    --text-3:#5C6B7C;
+    --primary:#2BE3A7;
+    --primary-soft:rgba(43,227,167,.12);
+    --accent:#4F8CFF;
+    --accent-soft:rgba(79,140,255,.14);
+    --warn:#FFB020;
+    --danger:#FF5C5C;
+    /* ---------- 圆角 ---------- */
+    --r-xl:26px;
+    --r-lg:20px;
+    --r-md:14px;
+    --r-sm:10px;
+    --r-pill:999px;
+    /* ---------- 间距 ---------- */
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s7:32px;
+    /* ---------- 字号 ---------- */
+    --t-display:30px;
+    --t-title:21px;
+    --t-body:15px;
+    --t-sub:13px;
+    --t-cap:11px;
+    --font:-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+    --mono:"SF Mono",ui-monospace,"Roboto Mono",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    gap:56px;flex-wrap:wrap;
+    padding:48px 24px;
+    font-family:var(--font);
+    color:var(--text);
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(43,227,167,.10), transparent 60%),
+      radial-gradient(1000px 600px at 90% 110%, rgba(79,140,255,.10), transparent 60%),
+      #06090D;
+  }
+  .side{max-width:320px;}
+  .side h1{font-size:26px;line-height:1.3;margin:0 0 12px;letter-spacing:-.3px;}
+  .side h1 span{color:var(--primary);}
+  .side p{font-size:14px;line-height:1.75;color:var(--text-2);margin:0 0 18px;}
+  .side ul{list-style:none;padding:0;margin:0;font-size:13px;color:var(--text-2);line-height:1.9;}
+  .side li b{color:var(--text);font-weight:600;}
+  .themes{display:flex;gap:8px;margin:0 0 18px;}
+  .tbtn{flex:1;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.14);
+    background:#141B24;color:#8B9AAC;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;}
+  .tbtn.on{background:var(--primary);color:#04140F;border-color:transparent;}
+  .side .tagline{display:inline-block;font-size:11px;letter-spacing:.14em;color:var(--primary);
+    border:1px solid rgba(43,227,167,.35);background:var(--primary-soft);
+    padding:5px 10px;border-radius:var(--r-pill);margin-bottom:16px;}
+
+  /* ---------- 手机外壳 ---------- */
+  .device{
+    position:relative;width:390px;height:844px;flex:0 0 auto;
+    background:var(--bg);border-radius:44px;overflow:hidden;
+    box-shadow:0 0 0 10px #1a1f27, 0 0 0 12px #2b323d, 0 40px 80px -20px rgba(0,0,0,.8);
+    isolation:isolate;
+  }
+  .statusbar{
+    position:absolute;top:0;left:0;right:0;height:44px;z-index:30;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 26px;font-size:13px;font-weight:600;letter-spacing:.2px;
+    pointer-events:none;
+  }
+  .statusbar .icons{display:flex;align-items:center;gap:6px;}
+  .home-bar{
+    position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    width:134px;height:5px;border-radius:3px;background:rgba(255,255,255,.5);z-index:40;
+  }
+
+  /* ---------- 应用骨架 ---------- */
+  .app{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:44px;}
+  .screen{
+    display:none;flex-direction:column;flex:1;min-height:0;
+    animation:fade .22s ease;
+  }
+  .screen.on{display:flex;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .topbar{padding:6px 20px 12px;display:flex;align-items:flex-start;justify-content:space-between;}
+  .topbar h2{font-size:var(--t-title);margin:0;font-weight:700;letter-spacing:-.2px;}
+  .topbar .sub{font-size:var(--t-cap);color:var(--text-3);margin-top:5px;letter-spacing:.02em;}
+  .topbar .avatar{
+    width:34px;height:34px;border-radius:var(--r-pill);flex:0 0 auto;
+    background:linear-gradient(140deg,#2BE3A7,#0E8F6B);color:#04140F;
+    display:grid;place-items:center;font-weight:800;font-size:13px;
+  }
+  .scroll{flex:1;min-height:0;overflow-y:auto;padding:0 20px 24px;
+    scrollbar-width:none;}
+  .scroll::-webkit-scrollbar{display:none;}
+
+  /* ---------- 卡片 ---------- */
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:var(--s4);
+  }
+  .card.tight{padding:var(--s3) var(--s4);}
+  .sec-title{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:22px 2px 10px;
+  }
+  .sec-title h3{font-size:var(--t-body);margin:0;font-weight:600;letter-spacing:-.1px;}
+  .sec-title span{font-size:var(--t-cap);color:var(--text-3);}
+
+  /* ---------- 输入 ---------- */
+  .input-card{
+    background:linear-gradient(180deg,rgba(43,227,167,.05),rgba(20,27,36,0) 60%),var(--surface);
+    border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s4);
+  }
+  .input-row{display:flex;align-items:center;gap:10px;}
+  .input-field{
+    flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r-md);padding:12px 12px;
+    font-family:var(--mono);font-size:12px;color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .input-field.ph{color:var(--text-3);}
+  .icon-btn{
+    width:44px;height:44px;flex:0 0 44px;border-radius:var(--r-md);
+    background:var(--surface-2);border:1px solid var(--line);
+    display:grid;place-items:center;cursor:pointer;transition:transform .12s,background .12s;
+  }
+  .icon-btn:active{transform:scale(.94);background:#222c39;}
+  .parsed{
+    display:flex;align-items:center;gap:8px;margin-top:12px;
+    font-size:var(--t-sub);color:var(--text-2);flex-wrap:wrap;
+  }
+  .chip{
+    font-size:var(--t-cap);padding:4px 9px;border-radius:var(--r-pill);
+    background:var(--accent-soft);color:#9DC0FF;border:1px solid rgba(79,140,255,.25);
+  }
+  .file-name{color:var(--text);font-weight:600;font-family:var(--mono);font-size:12px;}
+
+  /* ---------- 按钮 ---------- */
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;height:54px;border:none;border-radius:var(--r-md);
+    font-family:var(--font);font-size:16px;font-weight:700;letter-spacing:.02em;
+    background:var(--primary);color:#04140F;cursor:pointer;
+    box-shadow:0 10px 24px -10px rgba(43,227,167,.7);
+    transition:transform .12s ease,box-shadow .12s ease;
+  }
+  .btn:active{transform:scale(.985);box-shadow:0 6px 16px -10px rgba(43,227,167,.7);}
+  .btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);box-shadow:none;font-weight:600;}
+  .btn.small{height:44px;font-size:14px;}
+  .btn:disabled{opacity:.45;box-shadow:none;}
+
+  /* ---------- 镜像行 ---------- */
+  .mirror{
+    display:flex;align-items:center;gap:12px;padding:11px 12px;
+    border-radius:var(--r-md);border:1px solid transparent;position:relative;
+    transition:background .15s,border-color .15s;
+  }
+  .mirror + .mirror{margin-top:2px;}
+  .mirror.win{background:var(--primary-soft);border-color:rgba(43,227,167,.32);}
+  .mirror.dead{opacity:.42;}
+  .rank{
+    width:26px;height:26px;flex:0 0 26px;border-radius:9px;
+    display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700;
+    background:var(--surface-2);color:var(--text-3);border:1px solid var(--line);
+  }
+  .mirror.win .rank{background:var(--primary);color:#04140F;border-color:transparent;}
+  .m-main{flex:1;min-width:0;}
+  .m-name{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .m-name .badge{
+    font-size:9.5px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:5px;
+    background:var(--primary);color:#04140F;
+  }
+  .m-meta{font-size:11.5px;color:var(--text-3);margin-top:4px;font-family:var(--mono);display:flex;gap:10px;}
+  .m-right{text-align:right;flex:0 0 auto;}
+  .m-speed{font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+  .m-speed small{font-size:9.5px;color:var(--text-3);font-weight:500;margin-left:3px;}
+  .m-lat{font-size:10.5px;color:var(--text-3);font-family:var(--mono);margin-top:3px;}
+  .m-lat.fast{color:#7FE7C6;}
+  .bar{position:absolute;left:12px;right:12px;bottom:4px;height:3px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#1C9E79,var(--primary));
+    width:0;transition:width .3s ease;}
+  .scanning{display:flex;gap:3px;align-items:flex-end;height:14px;}
+  .scanning i{width:3px;border-radius:2px;background:var(--primary);opacity:.8;animation:eq .7s infinite ease-in-out;}
+  .scanning i:nth-child(2){animation-delay:.12s}
+  .scanning i:nth-child(3){animation-delay:.24s}
+  @keyframes eq{0%,100%{height:4px}50%{height:14px}}
+  .m-fail{font-size:11px;color:var(--danger);font-family:var(--mono);}
+
+  /* ---------- 下载卡片 ---------- */
+  .dl-card{
+    background:linear-gradient(180deg,#16211F 0%, #131B23 55%);
+    border:1px solid rgba(43,227,167,.22);border-radius:var(--r-lg);
+    padding:16px;position:relative;overflow:hidden;
+  }
+  .dl-head{display:flex;align-items:center;gap:10px;}
+  .dl-file{font-family:var(--mono);font-size:13.5px;font-weight:700;flex:1;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dl-src{font-size:10.5px;color:var(--text-3);margin-top:4px;font-family:var(--mono);}
+  .pct{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--primary);}
+  .pct small{font-size:13px;font-weight:600;margin-left:1px;}
+  .wave{width:100%;height:46px;display:block;margin:6px 0 4px;}
+  .progress{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .progress i{display:block;height:100%;width:0;border-radius:3px;
+    background:linear-gradient(90deg,#0F7A5C,var(--primary));transition:width .4s linear;}
+  .dl-stats{display:flex;justify-content:space-between;margin-top:10px;font-family:var(--mono);
+    font-size:11px;color:var(--text-3);}
+  .dl-stats b{color:var(--text);font-weight:600;}
+  .dl-actions{display:flex;gap:8px;margin-top:14px;}
+
+  /* ---------- 历史 ---------- */
+  .hrow{display:flex;align-items:center;gap:12px;padding:13px 0;}
+  .hrow + .hrow{border-top:1px solid var(--line);}
+  .hico{width:38px;height:38px;flex:0 0 38px;border-radius:11px;display:grid;place-items:center;
+    background:var(--surface-2);border:1px solid var(--line);}
+  .hico.ok{background:var(--primary-soft);border-color:rgba(43,227,167,.25);}
+  .hico.bad{background:rgba(255,92,92,.1);border-color:rgba(255,92,92,.25);}
+  .h-main{flex:1;min-width:0;}
+  .h-file{font-family:var(--mono);font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .h-sub{font-size:11px;color:var(--text-3);margin-top:4px;font-family:var(--mono);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .h-right{font-size:11px;color:var(--text-3);text-align:right;font-family:var(--mono);
+    white-space:nowrap;flex:0 0 auto;}
+  .h-pick{width:20px;height:20px;flex:0 0 20px;border-radius:6px;border:1px solid var(--line-strong);
+    display:grid;place-items:center;font-size:11px;font-weight:700;color:#0b1116;}
+  .h-pick.on{background:var(--primary);border-color:var(--primary);}
+  .hrow.picked{background:rgba(43,227,167,.07);border-radius:10px;box-shadow:inset 0 0 0 1px rgba(43,227,167,.35);}
+  .chip.on{background:var(--primary);color:#0b1116;border-color:var(--primary);font-weight:600;}
+  .hist-bar{display:none;gap:10px;padding:10px 20px 8px;border-top:1px solid var(--line);background:var(--bg);}
+  .hist-bar.on{display:flex;}
+  .d-opt{padding:13px 14px;border:1px solid var(--line-strong);border-radius:12px;
+    margin-top:9px;cursor:pointer;background:var(--surface2);}
+  .d-opt b{display:block;font-size:13px;color:var(--text);}
+  .d-opt small{display:block;margin-top:4px;font-size:11px;color:var(--text-3);line-height:1.55;}
+  .d-opt.danger b{color:#FF5C5C;}
+  .day{margin:18px 2px 6px;font-size:11px;letter-spacing:.12em;color:var(--text-3);text-transform:uppercase;}
+
+  /* ---------- 空态 ---------- */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:56px 20px;text-align:center;}
+  .empty .ring{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;
+    background:var(--surface);border:1px dashed var(--line-strong);margin-bottom:16px;}
+  .empty h4{margin:0 0 6px;font-size:15px;}
+  .empty p{margin:0;font-size:12.5px;color:var(--text-3);line-height:1.6;max-width:230px;}
+
+  /* ---------- 列表型设置项 ---------- */
+  .li{display:flex;align-items:center;gap:12px;padding:14px 0;}
+  .li + .li{border-top:1px solid var(--line);}
+  .li .k{flex:1;font-size:14px;}
+  .li .k small{display:block;font-size:11px;color:var(--text-3);margin-top:3px;line-height:1.5;}
+  .li .v{font-size:12.5px;color:var(--text-2);font-family:var(--mono);}
+  .switch{width:44px;height:26px;border-radius:13px;background:#2A3441;position:relative;flex:0 0 44px;
+    transition:background .18s;cursor:pointer;border:1px solid var(--line);}
+  .switch i{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+    background:#8B9AAC;transition:transform .18s,background .18s;}
+  .switch.on{background:rgba(43,227,167,.3);border-color:rgba(43,227,167,.5);}
+  .switch.on i{transform:translateX(18px);background:var(--primary);}
+
+  /* ---------- 底部 tab ---------- */
+  /* 设置页的两段滑块：轨道浅、选中块深，左右可点也可拖 */
+  .seg{position:relative;display:flex;height:42px;margin-top:12px;padding:3px;
+    border-radius:21px;background:var(--primary-soft);border:1px solid var(--primary-line);
+    touch-action:pan-y;user-select:none;cursor:pointer;}
+  .seg i{position:absolute;top:3px;left:3px;width:calc(50% - 3px);height:calc(100% - 6px);
+    border-radius:18px;background:var(--primary);transition:transform .18s ease;}
+  .seg.dragging i{transition:none;}
+  .seg span{position:relative;z-index:1;flex:1;display:flex;align-items:center;
+    justify-content:center;font-size:13px;font-weight:600;color:var(--text-2);
+    transition:color .18s;}
+  .seg span.on{color:#04140F;}
+  body.light .seg span.on{color:#fff;}
+  body.mono .seg span.on{color:#fff;}
+
+  .tabbar{
+    height:64px;flex:0 0 64px;display:flex;align-items:center;
+    background:rgba(10,14,19,.92);backdrop-filter:blur(18px);
+    border-top:1px solid var(--line);padding-bottom:0;position:relative;z-index:20;
+  }
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--text-3);font-size:10px;font-weight:600;cursor:pointer;
+    height:100%;justify-content:center;position:relative;}
+  .tab.on{color:var(--primary);}
+  .tab.on::after{content:"";position:absolute;top:0;width:22px;height:2.5px;border-radius:2px;background:var(--primary);}
+  .tab svg{width:22px;height:22px;}
+
+  .toast{
+    position:absolute;left:50%;bottom:96px;transform:translate(-50%,12px);
+    background:#202B36;border:1px solid var(--line-strong);color:var(--text);
+    font-size:12px;padding:10px 16px;border-radius:var(--r-pill);
+    opacity:0;pointer-events:none;transition:.22s;z-index:60;white-space:nowrap;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0);}
+
+  /* ---------- 版本抽屉 / 选择文件 ---------- */
+  .sheet-mask{
+    position:absolute;inset:0;background:rgba(0,0,0,.5);
+    display:flex;align-items:flex-end;opacity:0;pointer-events:none;
+    transition:.22s;z-index:70;
+  }
+  .sheet-mask.on{opacity:1;pointer-events:auto;}
+  .sheet{
+    width:100%;max-height:78%;background:var(--surface);border-radius:20px 20px 0 0;
+    display:flex;flex-direction:column;transform:translateY(20px);transition:.22s;
+    border-top:1px solid var(--line-strong);padding-bottom:28px;
+  }
+  .sheet-mask.on .sheet{transform:translateY(0);}
+  .sheet-head{padding:16px 18px 8px;font-size:15px;font-weight:600;color:var(--text);}
+  .sheet-body{overflow-y:auto;padding:0 18px 4px;}
+  .sheet-foot{padding:10px 18px 0;}
+  .v-row{margin-top:16px;}
+  .v-tag{display:flex;align-items:baseline;gap:8px;}
+  /* 窄屏 / 长标签：最多两行，实在放不下再缩字号 */
+  .v-tag b{font-size:14px;color:var(--text);flex:1;min-width:0;line-height:1.25;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    word-break:break-all;}
+  .v-tag span{font-size:11px;color:var(--text3);margin-left:auto;flex:none;white-space:nowrap;}
+  .v-pick{
+    margin-top:7px;padding:10px 12px;border-radius:10px;background:var(--surface2);
+    border:1px solid var(--line-strong);cursor:pointer;
+  }
+  .v-pick:active{transform:scale(.995);}
+  .v-pick .l1{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);font-weight:600;}
+  .v-pick .l2{font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--mono);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .v-badge{font-size:10px;padding:1px 6px;border-radius:5px;background:var(--primary);color:#0b1116;}
+  .v-size{font-size:11px;color:var(--text2);font-weight:400;margin-left:auto;}
+  .abi-bar{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none;}
+  .abi-bar::-webkit-scrollbar{display:none;}
+  .abi-chip{
+    flex:0 0 auto;height:34px;line-height:32px;padding:0 13px;border-radius:17px;
+    font-size:12px;border:1px solid var(--line-strong);color:var(--text2);
+    background:var(--surface2);white-space:nowrap;
+  }
+  .abi-chip.on{background:var(--primary);border-color:var(--primary);color:#0b1116;font-weight:600;}
+  .mode-tip{font-size:11px;color:var(--text-3);margin:0 0 6px;line-height:1.55;}
+  .v-check{width:18px;height:18px;border-radius:5px;border:1px solid var(--line-strong);
+    display:inline-flex;align-items:center;justify-content:center;font-size:11px;
+    color:#0b1116;flex:0 0 auto;font-weight:700;}
+  .v-check.on{background:var(--primary);border-color:var(--primary);}
+  .v-pick.on{border-color:var(--primary);}
+  .v-mark{font-size:10px;color:var(--text-3);margin-left:6px;font-weight:400;}
+  .v-mark.on{color:var(--primary);}
+  .btn[disabled]{opacity:.45;pointer-events:none;}
+
+  /* ---------- 镜像管理行 ---------- */
+  .mir-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .mir-row:last-child{border-bottom:none;}
+  .mir-handle{flex:0 0 auto;width:40px;height:44px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;color:var(--text-3);
+    background:var(--surface2);border:1px solid var(--line);cursor:grab;
+    touch-action:none;user-select:none;-webkit-user-select:none;}
+  .mir-handle:active{cursor:grabbing;color:var(--text);}
+  .mir-row.dragging{background:var(--surface2);border-radius:12px;z-index:5;position:relative;
+    box-shadow:0 10px 26px rgba(0,0,0,.45);}
+  .mir-row.dragging .mir-handle{color:var(--primary);border-color:var(--primary);}
+  .mir-k{flex:1;min-width:0;font-size:13px;color:var(--text);font-weight:600;}
+  .mir-k small{display:block;margin-top:3px;font-size:10.5px;color:var(--text-3);font-weight:400;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mir-del{flex:0 0 auto;min-width:44px;height:44px;border:none;background:none;
+    color:#FF5C5C;font-size:11.5px;cursor:pointer;}
+
+
+
+  /* ---------- 浅色：纸白底 + 墨绿 ---------- */
+  body.light{
+    --bg:#F8FAFC; --surface:#FFFFFF; --surface-2:#F1F5F9;
+    --line:#E4EAF2; --line-strong:#C9D4E2;
+    --text:#111827; --text-2:#55637A; --text-3:#6B7789;
+    --primary:#0A8F63; --primary-soft:rgba(10,143,99,.10); --primary-line:rgba(10,143,99,.30);
+    --accent:#2F6FEB; --accent-soft:rgba(47,111,235,.10);
+    --warn:#B45309; --danger:#D92D20;
+    background:radial-gradient(1100px 560px at 15% -10%, rgba(10,143,99,.10), transparent 60%),#EDF1F6;
+  }
+  body.light .device{box-shadow:0 0 0 10px #E7ECF3, 0 0 0 12px #D5DCE6, 0 34px 70px -26px rgba(15,23,42,.42);}
+  body.light .home-bar{background:rgba(17,24,39,.35);}
+  body.light .btn{color:#FFFFFF;box-shadow:0 10px 22px -14px rgba(10,143,99,.8);}
+  body.light .btn.ghost{background:var(--surface);color:var(--text);box-shadow:none;}
+  body.light .btn:disabled{background:#E2E8F0;color:#6B7789;opacity:1;box-shadow:none;}
+  body.light .input-card{background:var(--surface);}
+  body.light .icon-btn{background:var(--surface-2);border-color:var(--line);}
+  body.light .icon-btn:active{background:#E2E8F0;}
+  body.light .avatar{background:linear-gradient(140deg,#0A8F63,#0F7A5C);color:#fff;}
+  body.light .dl-card{background:linear-gradient(180deg,#FFFFFF 0%,#F6FBF9 60%);
+    border-color:rgba(10,143,99,.28);}
+  body.light .tabbar{background:rgba(255,255,255,.97);}
+  body.light .toast{background:#111827;color:#fff;}
+  body.light .mirror.win{background:rgba(10,143,99,.07);border-color:rgba(10,143,99,.35);}
+  body.light .chip{background:rgba(47,111,235,.09);color:#2F6FEB;border-color:rgba(47,111,235,.22);}
+  body.light .switch{background:#D7DEE8;}
+  body.light .switch i{background:#8A97A8;}
+  body.light .switch.on{background:#0A8F63;}
+  body.light .switch.on i{background:#fff;}
+  body.light .m-lat.fast{color:#0A8F63;}
+  body.light .scanning i{background:#0A8F63;}
+  /* 内联 SVG 的硬编码色跟着主题走 */
+  body.light svg [fill="#E8EEF6"]{fill:#111827;}
+  body.light svg [stroke="#E8EEF6"]{stroke:#111827;}
+  body.light svg [fill="#8B9AAC"]{fill:#55637A;}
+  body.light svg [stroke="#8B9AAC"]{stroke:#55637A;}
+  body.light svg [fill="#2BE3A7"]{fill:#0A8F63;}
+  body.light svg [stroke="#2BE3A7"]{stroke:#0A8F63;}
+  body.light svg [fill="#5C6B7C"]{fill:#6B7789;}
+  body.light svg [stroke="#5C6B7C"]{stroke:#6B7789;}
+  body.light svg [fill="#04140F"]{fill:#FFFFFF;}
+  body.light svg [stroke="#04140F"]{stroke:#FFFFFF;}
+  body.light svg [fill="#FF5C5C"]{fill:#D92D20;}
+  body.light svg [stroke="#FF5C5C"]{stroke:#D92D20;}
+  body.light .statusbar{color:#111827;}
+
+  /* ---------- 版本追踪页 ---------- */
+  .lbl{font-size:11px;color:var(--text-3);margin-bottom:7px;letter-spacing:.02em;}
+  .chip-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .fchip{height:34px;padding:0 14px;display:inline-flex;align-items:center;border-radius:10px;
+    border:1px solid var(--line);background:var(--surface-2);color:var(--text-2);
+    font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,color .15s;}
+  .fchip.on{background:var(--primary);color:#04140F;border-color:transparent;}
+  body.light .fchip.on{color:#fff;}
+  .hint{font-size:11px;color:var(--text-3);margin-top:12px;line-height:1.6;}
+  .wcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:14px;margin-bottom:10px;}
+  .w-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .w-repo{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .w-del{font-size:11px;color:var(--text-3);padding:4px 0 4px 10px;cursor:pointer;flex:0 0 auto;}
+  .w-status{font-size:12px;margin-top:6px;line-height:1.5;}
+  .w-status.new{color:var(--warn);}
+  .w-status.ok{color:var(--primary);}
+  .w-status.idle{color:var(--text-3);}
+  .w-meta{font-size:11px;color:var(--text-2);margin-top:4px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .w-actions{display:flex;gap:8px;margin-top:12px;}
+  .w-actions .btn{height:42px;font-size:13px;flex:1;}
+  body.mono .m-speed,body.mono .m-speed small,body.mono .m-lat{color:#000;font-weight:700;}
+  body.mono .m-meta{color:#1A1A1A;}
+  body.mono .rank{background:#fff;border:1.5px solid #000;color:#000;}
+  body.mono .m-name .badge{background:#000;color:#fff;}
+  body.mono .chip{background:#fff;border:1.5px solid #000;color:#000;}
+  body.mono .w-status.new{color:#000;font-weight:700;}
+  body.mono .w-status.ok{color:#000;}
+  body.mono .w-del{color:#000;}
+  body.mono .btn:disabled{opacity:1;background:#fff;color:#000;border:1.5px solid #000;}
+  body.mono .btn.ghost{background:#fff;color:#000;border:1.5px solid #000;}
+  body.mono .fchip{background:#fff;border:1.5px solid #000;color:#000;}
+  body.mono .fchip.on{background:#000;color:#fff;}
+  body.mono .wcard{border:1.5px solid #000;}
+
+  /* ---------- 墨水屏黑白模式：纯黑白、加粗实线、无渐变无波形 ---------- */
+  body.mono{
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface2:#FFFFFF;
+    --line:#000000; --line-strong:#000000;
+    --text:#000000; --text-2:#1A1A1A; --text-3:#333333;
+    --primary:#000000; --primary-soft:#FFFFFF; --primary-line:#000000;
+    --accent:#000000; --accent-soft:#FFFFFF;
+    --warn:#000000; --danger:#000000;
+    background:#F2F2F2;
+  }
+  body.mono .device{box-shadow:0 0 0 10px #d8d8d8, 0 0 0 12px #bdbdbd;}
+  body.mono .card,
+  body.mono .input-card{border-width:1.5px;border-color:#000;background:#fff;
+    background:linear-gradient(0deg,#fff,#fff);}
+  body.mono .input-field{background:#fff;border:1.5px solid #000;color:#000;}
+  body.mono .icon-btn{background:#fff;border:1.5px solid #000;}
+  body.mono .btn{background:#000;color:#fff;box-shadow:none;border:1.5px solid #000;}
+  body.mono .btn.ghost{background:#fff;color:#000;border:1.5px solid #000;}
+  body.mono .btn.ghost span{color:#000 !important;}
+  body.mono .chip{background:#fff;border:1.5px solid #000;color:#000;}
+  body.mono .mirror.win{background:#fff;border:2px solid #000;}
+  body.mono .rank{background:#fff;color:#000;border:1.5px solid #000;}
+  body.mono .mirror.win .rank{background:#000;color:#fff;border-color:#000;}
+  body.mono .m-name .badge{background:#000;color:#fff;}
+  body.mono .bar{background:#ddd;height:4px;}
+  body.mono .bar i{background:#000;}
+  body.mono .dl-card{background:#fff;border:1.5px solid #000;}
+  body.mono .wave{display:none;}
+  body.mono .pct{color:#000;}
+  body.mono .progress{height:10px;background:#fff;border:1.5px solid #000;border-radius:2px;}
+  body.mono .progress i{background:#000;border-radius:0;}
+  body.mono .tabbar{background:#fff;border-top:1.5px solid #000;}
+  body.mono .tab{color:#333;}
+  body.mono .tab.on{color:#000;}
+  body.mono .switch{background:#fff;border:1.5px solid #000;}
+  body.mono .switch i{background:#000;}
+  body.mono .switch.on{background:#000;}
+  body.mono .switch.on i{background:#fff;}
+  body.mono .hico{background:#fff;border:1.5px solid #000;}
+  body.mono .hico.ok,body.mono .hico.bad{background:#fff;border-color:#000;}
+  body.mono .avatar{background:#000;color:#fff;}
+  body.mono .m-lat.fast{color:#000;}
+  body.mono .tbtn{background:#fff;border:1.5px solid #000;color:#000;}
+  body.mono .tbtn.on{background:#000;border-color:#000;color:#fff;}
+  body.mono svg{filter:brightness(0);}
+  body.mono .btn:not(.ghost) svg{filter:brightness(0) invert(1);}
+  body.mono .btn.ghost svg{filter:brightness(0);}
+  body.mono .icon-btn svg [stroke]:not([stroke="none"]){stroke:#000;}
+  body.mono .hico svg [stroke]:not([stroke="none"]){stroke:#000;}
+  body.mono .empty .ring{border-color:#000;}
+  body.mono .scanning i{background:#000;}
+</style>
+</head>
+<body>
+
+<div class="side">
+  <div class="tagline">3 THEMES · 深空 / 纸白 / 墨水屏</div>
+  <h1>光速镜像<br><span>GitHub 下载加速器</span></h1>
+  <p>10 个国内镜像逐个测速，选出最快的链路。支持多个文件并发下载，共用同一份排名；每个任务都能独立暂停、取消，下完直接安装。</p>
+  <div class="themes">
+    <button class="tbtn on" data-theme="dark">深色</button>
+    <button class="tbtn" data-theme="light">浅色</button>
+    <button class="tbtn" data-theme="mono">黑白</button>
+  </div>
+  <ul>
+    <li><b>测速口径</b>　TTFB 延迟 + 可调分片吞吐（默认 256KB）</li>
+    <li><b>评分</b>　速度 70% · 延迟 30%</li>
+    <li><b>失败兜底</b>　自动降级到第 2、3 名</li>
+    <li><b>并发</b>　多文件同时下 1–10 个 + 单文件 1–10 条连接（默认都拉满）</li>
+    <li><b>镜像管理</b>　按住手柄拖动排序 / 开关 / 删除</li>
+    <li><b>版本追踪</b>　新 release 有新版本可挑</li>
+  </ul>
+</div>
+
+<div class="device">
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#E8EEF6"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#E8EEF6" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"/><path d="M3.6 6.2a6.4 6.4 0 0 1 8.8 0"/><path d="M6.2 8.8a2.7 2.7 0 0 1 3.6 0"/></svg>
+      <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.6" y="0.6" width="20" height="9.8" rx="2.6" stroke="#E8EEF6" stroke-opacity=".45"/><rect x="2.2" y="2.2" width="14" height="6.6" rx="1.4" fill="#E8EEF6"/><path d="M22.4 3.8v3.4c.9-.3 1.4-.9 1.4-1.7s-.5-1.4-1.4-1.7z" fill="#E8EEF6" fill-opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <div class="app">
+    <!-- ============ 1. 下载台 ============ -->
+    <section class="screen on" id="s-home">
+      <div class="topbar">
+        <div>
+          <h2>镜像下载台</h2>
+          <div class="sub">多任务并发 · 自动择优链路</div>
+        </div>
+        <div class="avatar">G</div>
+      </div>
+      <div class="scroll">
+        <div class="input-card">
+          <div class="input-row">
+            <div class="input-field" id="urlField">https://github.com/yt-dlp/yt-dlp/releases/download/2025.01.15/yt-dlp.exe</div>
+            <div class="icon-btn" id="pasteBtn" title="粘贴">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B9AAC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1.4"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></svg>
+            </div>
+          </div>
+          <div class="parsed">
+            <span class="chip">GitHub Release</span>
+            <span class="file-name">yt-dlp.exe</span>
+            <span>· 17.2 MB</span>
+          </div>
+          <div style="margin-top:14px">
+            <button class="btn" id="startBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#04140F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13z"/></svg>
+              测速并下载
+            </button>
+          </div>
+        </div>
+
+        <div class="sec-title">
+          <h3>镜像测速</h3>
+          <span id="mirrorHint">10 个候选 · 逐个探测</span>
+          <button class="btn ghost small" style="width:auto;padding:0 12px;margin-left:8px" onclick="toast('已重新测速，排名已更新')">重新测速</button>
+        </div>
+
+        <div class="card" style="padding:6px 8px 10px" id="mirrorCard">
+          <div id="mirrorList"></div>
+        </div>
+
+        <!-- 下载卡片（默认隐藏） -->
+        <div id="dlWrap" style="display:none;margin-top:16px">
+          <div class="sec-title" style="margin-top:6px">
+            <h3>下载任务</h3>
+            <span id="dlIndex">2 个进行中 / 2 个任务</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <button class="btn ghost small" style="flex:1" onclick="toast('已清除已完成任务')">清除已完成</button>
+            <button class="btn ghost small" style="flex:1" onclick="toast('已向所有任务发送取消')">全部取消</button>
+          </div>
+          <div class="dl-card">
+            <div class="dl-head">
+              <div style="flex:1;min-width:0">
+                <div class="dl-file">yt-dlp.exe</div>
+                <div class="dl-src" id="dlSrc">via ghfast.top · 4 线程</div>
+              </div>
+              <div class="pct" id="pct">0<small>%</small></div>
+            </div>
+            <canvas class="wave" id="wave" width="340" height="46"></canvas>
+            <div class="progress"><i id="progBar"></i></div>
+            <div class="dl-stats">
+              <span><b id="spd">0.0</b> MB/s</span>
+              <span>已下载 <b id="got">0</b> / 17.2 MB</span>
+            </div>
+            <div class="dl-stats" style="margin-top:5px">
+              <span>已用 <b id="elapsed">00:00</b></span>
+              <span>剩余 <b id="eta">--:--</b></span>
+            </div>
+            <div class="dl-actions">
+              <button class="btn ghost small" id="pauseBtn" style="flex:1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#E8EEF6"><rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/></svg>
+                暂停
+              </button>
+              <button class="btn ghost small" id="cancelBtn" style="flex:1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                <span style="color:#FF5C5C">取消</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="dl-card">
+            <div class="dl-head">
+              <div style="flex:1;min-width:0">
+                <div class="dl-file">Obsidian-1.15.0-arm64-v8a.apk</div>
+                <div class="dl-src">via xget.xi-xu.me/gh · 拼 GitHub 路径</div>
+              </div>
+              <div class="pct">42<small>%</small></div>
+            </div>
+            <div class="progress"><i style="width:42%"></i></div>
+            <div class="dl-stats">
+              <span><b>7.6</b> MB/s</span>
+              <span>已下载 <b>38.6</b> / 92.4 MB</span>
+            </div>
+            <div class="dl-stats" style="margin-top:5px">
+              <span>已用 <b>00:12</b></span>
+              <span>剩余 <b>00:07</b></span>
+            </div>
+            <div class="dl-actions">
+              <button class="btn ghost small" style="flex:1" onclick="toast('已暂停，继续后从断点接上')">暂停</button>
+              <button class="btn ghost small" style="flex:1" onclick="toast('已取消该任务')">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 1.5 版本追踪 ============ -->
+    <section class="screen" id="s-watch">
+      <div class="topbar">
+        <div>
+          <h2>版本追踪</h2>
+          <div class="sub">盯住最新 release · 只下你要的格式</div>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="input-card">
+          <div class="lbl">项目地址</div>
+          <div class="input-row">
+            <div class="input-field" id="repoField" style="font-family:var(--mono);font-size:12px">obsidianmd/obsidian-releases</div>
+            <button class="btn small" id="trackBtn" style="width:auto;padding:0 18px;flex:0 0 auto">追踪</button>
+          </div>
+          <div class="chip-row">
+            <span class="fchip" data-k="all">全部</span>
+            <span class="fchip on" data-k="apk">APK</span>
+            <span class="fchip" data-k="zip">ZIP</span>
+            <span class="fchip" data-k="pdf">PDF</span>
+            <span class="fchip" data-k="rar">RAR</span>
+          </div>
+          <div class="hint">支持 owner/repo、仓库主页、releases 页面地址。已下载过的文件会标灰，不重复下。</div>
+        </div>
+
+        <div class="sec-title">
+          <h3>追踪列表</h3>
+          <span>3 个</span>
+        </div>
+
+        <div class="wcard">
+          <div class="w-top">
+            <div class="w-repo">POf-L/Fanqie-novel-Downloader</div>
+            <div class="w-del">删除</div>
+          </div>
+          <div class="w-status ok">已是最新 · unsigned-v2026.11.3-1650-r785</div>
+          <div class="w-meta">最新 2026-11-03 · 1 个 APK · 推荐 arm64-v8a</div>
+          <div class="w-actions">
+            <button class="btn ghost small" onclick="openVersions()">查看版本</button>
+            <button class="btn small" onclick="goDownload()">下载最新</button>
+          </div>
+        </div>
+
+        <div class="wcard">
+          <div class="w-top">
+            <div class="w-repo">obsidianmd/obsidian-releases</div>
+            <div class="w-del">删除</div>
+          </div>
+          <div class="w-status new">有新版本 v1.14.4 → v1.15.0</div>
+          <div class="w-meta">最新 v1.15.0 · 2026-11-02 · 2 个 APK · 推荐 arm64-v8a</div>
+          <div class="w-actions">
+            <button class="btn ghost small" onclick="openVersions()">查看版本</button>
+            <button class="btn small" onclick="openPicker()">选择文件 · 2</button>
+          </div>
+        </div>
+
+        <div class="wcard" style="opacity:.9">
+          <div class="w-top">
+            <div class="w-repo">microsoft/PowerToys</div>
+            <div class="w-del">删除</div>
+          </div>
+          <div class="w-status idle">最新版本没有 APK</div>
+          <div class="w-meta">最新 v0.87.0 · 2026-10-28</div>
+          <div class="w-actions">
+            <button class="btn ghost small" onclick="openVersions()">查看版本</button>
+            <button class="btn small" disabled style="opacity:.4">没有匹配文件</button>
+          </div>
+        </div>
+
+        <div class="hint" style="text-align:center;margin-top:16px">
+          只读 GitHub 公开接口，每小时 60 次；进入本页才检查，不会后台偷跑流量
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 2. 历史 ============ -->
+    <section class="screen" id="s-history">
+      <div class="topbar">
+        <div style="min-width:0">
+          <h2>下载记录</h2>
+          <div class="sub" id="historySub" onclick="askHistoryMax()" style="cursor:pointer">共 0 条 · 保存在本机</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto">
+          <span class="chip" id="histPickBtn" onclick="togglePick()" style="cursor:pointer">选择</span>
+          <div class="icon-btn" style="width:38px;height:38px;flex:0 0 38px" id="clearBtn" onclick="askDelete('all')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B9AAC" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="scroll" id="historyScroll"></div>
+      <div class="hist-bar" id="histBar">
+        <button class="btn ghost" style="width:auto;padding:0 16px" onclick="toggleAll()" id="histAllBtn">全选</button>
+        <button class="btn primary" style="flex:1" onclick="askDelete('sel')" id="histDelBtn">删除选中</button>
+      </div>
+    </section>
+
+    <!-- ============ 3. 镜像 ============ -->
+    <section class="screen" id="s-mirrors">
+      <div class="topbar">
+        <div>
+          <h2>镜像源</h2>
+          <div class="sub">顺序 = 测速顺序，同分时靠前优先</div>
+        </div>
+        <div class="chip" style="margin-top:2px">已启用 9 / 10</div>
+      </div>
+      <div class="scroll">
+        <div class="card" style="background:linear-gradient(160deg,rgba(79,140,255,.10),rgba(20,27,36,0) 70%),var(--surface)">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F8CFF" stroke-width="2" stroke-linecap="round" style="margin-top:2px;flex:0 0 18px"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>
+            <div style="font-size:12.5px;line-height:1.7;color:var(--text-2)">
+              逐个发 <b style="color:var(--text)" id="mirrorNoteChunk">256 KB</b> Range 请求，得分 = 速度 70% + 延迟 30%。多个文件可同时下载，共用这份排名；失败自动顺延。
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-title">
+          <h3>候选列表</h3>
+          <span>按住 ≡ 上下拖动排序</span>
+          <button class="btn ghost small" style="width:auto;padding:0 12px" onclick="toast('已恢复内置镜像')">恢复内置</button>
+        </div>
+        <div class="card" style="padding:2px 14px" id="mirrorPrefs">
+          <div class="mir-row">
+            <div class="mir-handle" title="按住拖动">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h14M5 12h14M5 16h14"/></svg>
+            </div>
+            <div class="mir-k">ghfast.top<small>https://ghfast.top/ · 拼完整链接 · 上次 9.8 MB/s · 182 ms</small></div>
+            <div class="switch on"><i></i></div><button class="mir-del" onclick="delMir(this)">删除</button>
+          </div>
+          <div class="mir-row">
+            <div class="mir-handle" title="按住拖动">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h14M5 12h14M5 16h14"/></svg>
+            </div>
+            <div class="mir-k">xget.xi-xu.me/gh<small>https://xget.xi-xu.me/gh/ · 拼 GitHub 路径 · 上次 12.1 MB/s · 96 ms</small></div>
+            <div class="switch on"><i></i></div><button class="mir-del" onclick="delMir(this)">删除</button>
+          </div>
+          <div class="mir-row">
+            <div class="mir-handle" title="按住拖动">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h14M5 12h14M5 16h14"/></svg>
+            </div>
+            <div class="mir-k">gh-proxy.com<small>https://gh-proxy.com/ · 拼完整链接 · 上次 8.4 MB/s · 206 ms</small></div>
+            <div class="switch on"><i></i></div><button class="mir-del" onclick="delMir(this)">删除</button>
+          </div>
+          <div class="mir-row">
+            <div class="mir-handle" title="按住拖动">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h14M5 12h14M5 16h14"/></svg>
+            </div>
+            <div class="mir-k">ghproxy.cn<small>https://ghproxy.cn/ · 连续失败 4 次 · 建议删除</small></div>
+            <div class="switch"><i></i></div><button class="mir-del" onclick="delMir(this)">删除</button>
+          </div>
+        </div>
+
+        <div class="sec-title"><h3>添加自定义镜像</h3></div>
+        <div class="card">
+          <div class="input-row">
+            <div class="input-field ph">https://你的镜像域名/</div>
+            <div class="icon-btn" style="background:var(--primary-soft);border-color:rgba(43,227,167,.3)" onclick="toast('已添加镜像')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2BE3A7" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+          </div>
+          <div class="chip-row" style="margin-top:12px">
+            <span class="fchip on" id="addModePrefix" onclick="setAddMode('prefix')">拼完整链接</span>
+            <span class="fchip" id="addModePath" onclick="setAddMode('path')">拼 GitHub 路径</span>
+          </div>
+          <div id="addHint" style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.6">
+            拼完整链接：https://ghfast.top/ → 后面接完整的 https://github.com/owner/repo/...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4. 设置 ============ -->
+    <section class="screen" id="s-settings">
+      <div class="topbar">
+        <div>
+          <h2>设置</h2>
+          <div class="sub">下载与测速策略</div>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="sec-title" style="margin-top:4px"><h3>下载</h3></div>
+        <div class="card" style="padding:2px 14px">
+          <div class="li" onclick="chooseSavePath()" style="cursor:pointer">
+            <div class="k">保存位置<small>点一下换目录 · 公共下载 / 私有 / 自定义</small></div>
+            <div class="v" id="savePathVal">应用私有 ›</div>
+          </div>
+          <div class="li" onclick="askConc()" style="cursor:pointer">
+            <div class="k">同时下载任务数<small id="concSub">最多 3 个文件同时下载，共用同一份镜像排名</small></div>
+            <div class="v" id="concVal">3 个 ›</div>
+          </div>
+          <div class="li"><div class="k">单文件多线程<small>切片并发拉取，镜像支持 Range 时生效</small></div><div class="switch on" id="swMulti"><i></i></div></div>
+          <div class="li" onclick="askThreads()" style="cursor:pointer">
+            <div class="k">每个文件连接数<small id="threadsSub">每个文件切 10 段并发拉取（默认拉满）</small></div>
+            <div class="v" id="threadsVal">10 线程 ›</div>
+          </div>
+          <div class="li"><div class="k">失败自动换镜像<small>按测速排名顺延</small></div><div class="switch on"><i></i></div></div>
+          <div class="li"><div class="k">最多重试几个镜像<small>一个失败就换下一个</small></div><div class="v">7 个 ›</div></div>
+          <div class="li"><div class="k">断点续传<small>镜像支持 Range 时生效</small></div><div class="switch on"><i></i></div></div>
+        </div>
+
+        <div class="sec-title"><h3>版本页</h3></div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:14px;font-weight:700;color:var(--text)">挑文件方式</div>
+          <div id="modeSub" style="font-size:11.5px;line-height:1.6;color:var(--text-3);margin-top:4px">
+            点一个文件就直接测速下载，适合只要一个包的情况</div>
+          <div class="seg" id="modeSeg">
+            <i id="modeThumb" style="transform:translateX(0%)"></i>
+            <span class="on" data-v="0">单个下载</span>
+            <span data-v="1">批量勾选</span>
+          </div>
+        </div>
+
+        <div class="sec-title"><h3>测速</h3></div>
+        <div class="card" style="padding:2px 14px">
+          <div class="li" onclick="askChunk()" style="cursor:pointer">
+            <div class="k">探测分片<small>越大越准，也越费流量</small></div><div class="v" id="chunkVal">256 KB ›</div>
+          </div>
+          <div class="li" onclick="askTimeout()" style="cursor:pointer">
+            <div class="k">单个镜像超时<small>超时直接判负，不拖慢整体</small></div><div class="v" id="timeoutVal">8 秒 ›</div>
+          </div>
+          <div class="li"><div class="k">复用测速结果<small id="cacheSub">10 分钟内复用同一份测速排名</small></div><div class="switch on" id="swCache"><i></i></div></div>
+          <div class="li" onclick="askTtl()" style="cursor:pointer">
+            <div class="k">复用周期<small>1~720 分钟，网络经常变就调短一点</small></div><div class="v" id="ttlVal">10 分钟 ›</div>
+          </div>
+        </div>
+
+        <div class="sec-title"><h3>记录</h3></div>
+        <div class="card" style="padding:2px 14px">
+          <div class="li" onclick="askHistoryMax()" style="cursor:pointer">
+            <div class="k">历史记录条数<small id="histMaxSub">列表最多显示 20 条，调小不会删掉记录</small></div>
+            <div class="v" id="histMaxVal">20 条 ›</div>
+          </div>
+        </div>
+
+        <div class="sec-title"><h3>关于</h3></div>
+        <div class="card" style="padding:2px 14px">
+          <div class="li"><div class="k">版本</div><div class="v">1.8.3 (build 18)</div></div>
+          <div class="li"><div class="k">支持的链接<small>release 附件 / archive / raw / 普通直链</small></div><div class="v">4 类</div></div>
+        </div>
+        <div style="text-align:center;font-size:10.5px;color:var(--text-3);margin:26px 0 10px;line-height:1.8">
+          光速镜像 · 只做链路选择，不代理、不缓存内容
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部 tab -->
+    <nav class="tabbar">
+      <div class="tab on" data-s="s-home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M12 15l-4-4M12 15l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        下载台
+      </div>
+      <div class="tab" data-s="s-watch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 16.2V8M8.6 11.2L12 7.8l3.4 3.4"/></svg>
+        版本
+      </div>
+      <div class="tab" data-s="s-history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        记录
+      </div>
+      <div class="tab" data-s="s-mirrors">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6.4" rx="2"/><rect x="3" y="13.6" width="18" height="6.4" rx="2"/><path d="M7 7.2h.01M7 16.8h.01" stroke-width="2.4" stroke-linecap="round"/></svg>
+        镜像
+      </div>
+      <div class="tab" data-s="s-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-2.87 1.2v.17a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 2.6 15a1.7 1.7 0 0 0-1.6-1H.9a2 2 0 1 1 0-4h.17A1.7 1.7 0 0 0 2.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 7 4.6h.09A1.7 1.7 0 0 0 8.7 3v-.9a2 2 0 1 1 4 0v.17A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.6 1.61h.1a2 2 0 1 1 0 4h-.17a1.7 1.7 0 0 0-1.53 1z"/></svg>
+        设置
+      </div>
+    </nav>
+  </div>
+
+  <div class="home-bar"></div>
+  <div class="toast" id="toast">已切换镜像</div>
+
+  <!-- 版本抽屉 -->
+  <div class="sheet-mask" id="vMask" onclick="closeSheet('v')">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-head">POf-L/Fanqie-novel-Downloader</div>
+      <div class="sheet-body" id="vBody"></div>
+      <div class="sheet-foot" id="vFoot"><button class="btn ghost" onclick="closeSheet('v')">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 选择文件弹层 -->
+  <div class="sheet-mask" id="pMask" onclick="closeSheet('p')">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-head">选择要下载的文件</div>
+      <div class="sheet-body" id="pBody"></div>
+      <div class="sheet-foot" id="pFoot"><button class="btn ghost" onclick="closeSheet('p')">取消</button></div>
+    </div>
+  </div>
+
+  <div class="sheet-mask" id="dMask" onclick="closeSheet('d')">
+    <div class="sheet" style="padding-bottom:44px" onclick="event.stopPropagation()">
+      <div class="sheet-head" id="dTitle">删除记录</div>
+      <div class="sheet-body">
+        <div class="d-opt" onclick="doDelete(false)">
+          <b>只删记录</b><small>已下载的文件留在原处，随时还能再打开</small>
+        </div>
+        <div class="d-opt danger" onclick="doDelete(true)">
+          <b>记录和文件一起删</b><small id="dFileHint">文件会被永久删除，无法恢复</small>
+        </div>
+      </div>
+      <div class="sheet-foot"><button class="btn ghost" onclick="closeSheet('d')">取消</button></div>
+    </div>
+  </div>
+
+  <div class="sheet-mask" id="nMask" onclick="closeSheet('n')">
+    <div class="sheet" style="padding-bottom:18px" onclick="event.stopPropagation()">
+      <div class="sheet-head" id="nTitle">同时下载任务数</div>
+      <div class="sheet-body">
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.6" id="nHint">1~10 个</div>
+        <input id="nInput" type="number" inputmode="numeric" style="width:100%;margin-top:10px;background:var(--surface2);border:1px solid var(--line-strong);border-radius:10px;color:var(--text);font:600 20px/1 var(--mono);padding:12px 14px;outline:none" />
+        <div class="chip-row" id="nChips" style="margin-top:12px"></div>
+      </div>
+      <div class="sheet-foot" style="display:flex;gap:10px">
+        <button class="btn ghost" style="flex:1" onclick="closeSheet('n')">取消</button>
+        <button class="btn primary" style="flex:1" onclick="numOk()">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 数据 ================= */
+const MIRRORS = [
+  {name:'ghfast.top',        lat:182, spd:9.8},
+  {name:'xget.xi-xu.me/gh',  lat:96,  spd:12.1},
+  {name:'gh-proxy.com',      lat:206, spd:8.4},
+  {name:'ghproxy.net',       lat:241, spd:6.1},
+  {name:'hub.gitmirror.com', lat:298, spd:4.7},
+  {name:'gh.llkk.cc',        lat:352, spd:3.9},
+  {name:'ghproxy.cn',        lat:410, spd:2.2},
+  {name:'ghps.cc',           lat:0,   spd:0, fail:'超时'},
+  {name:'moeyy.xyz',         lat:0,   spd:0, fail:'403'},
+];
+const TOTAL_MB = 17.2;
+const MAX_SPD = 10;
+
+/* ================= 渲染镜像行 ================= */
+const list = document.getElementById('mirrorList');
+list.innerHTML = MIRRORS.map((m,i)=>`
+  <div class="mirror" data-i="${i}">
+    <div class="rank">${i+1}</div>
+    <div class="m-main">
+      <div class="m-name">${m.name}<span class="badge" style="display:none">最快</span></div>
+      <div class="m-meta"><span class="lat">待测速</span></div>
+    </div>
+    <div class="m-right">
+      <div class="m-speed"><span class="v">--</span><small>MB/s</small></div>
+      <div class="m-lat">--</div>
+    </div>
+    <div class="bar"><i></i></div>
+  </div>`).join('');
+
+const $ = s => document.querySelector(s);
+const rows = [...document.querySelectorAll('.mirror')];
+
+/* ================= 版本追踪页 ================= */
+document.querySelectorAll('.fchip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');
+  });
+});
+document.getElementById('trackBtn').addEventListener('click',()=>{
+  const v = document.getElementById('repoField').textContent.trim();
+  toast('已加入追踪 · ' + (v || 'owner/repo'));
+});
+
+/* ---- 版本数据（真实顺序：按 published_at 倒序） ---- */
+const RELEASES = [
+  {tag:'unsigned-v2026.11.3-1650-r785', date:'2026-11-03', time:'11-03 17:52', assets:[
+    {abi:'arm64-v8a',  name:'FanqieNovelDownloader-2026.11.3-1650-r785-android-arm64-v8a.apk',  size:'20.0 MB'},
+    {abi:'armeabi-v7a',name:'FanqieNovelDownloader-2026.11.3-1650-r785-android-armeabi-v7a.apk',size:'15.9 MB'},
+    {abi:'universal',  name:'FanqieNovelDownloader-2026.11.3-1650-r785-android-universal.apk',  size:'63.1 MB'},
+    {abi:'x86_64',     name:'FanqieNovelDownloader-2026.11.3-1650-r785-android-x86_64.apk',     size:'22.0 MB'},
+    {abi:'',           name:'ABIS.txt', size:'318 B'}
+  ]},
+  {tag:'unsigned-v2026.11.3-251-r783', date:'2026-11-03', time:'11-03 17:52', assets:[
+    {abi:'arm64-v8a',  name:'FanqieNovelDownloader-2026.11.3-251-r783-android-arm64-v8a.apk',  size:'20.0 MB'},
+    {abi:'armeabi-v7a',name:'FanqieNovelDownloader-2026.11.3-251-r783-android-armeabi-v7a.apk',size:'15.9 MB'},
+    {abi:'universal',  name:'FanqieNovelDownloader-2026.11.3-251-r783-android-universal.apk',  size:'63.1 MB'}
+  ]},
+  {tag:'unsigned-v2026.11.2-1446-r781', date:'2026-11-02', time:'11-02 14:46', assets:[
+    {abi:'arm64-v8a',  name:'FanqieNovelDownloader-2026.11.2-1446-r781-android-arm64-v8a.apk',  size:'19.8 MB'},
+    {abi:'universal',  name:'FanqieNovelDownloader-2026.11.2-1446-r781-android-universal.apk',  size:'62.7 MB'}
+  ]},
+  {tag:'unsigned-v2026.11.2-819-r780', date:'2026-11-02', time:'11-02 08:19', assets:[
+    {abi:'arm64-v8a',  name:'FanqieNovelDownloader-2026.11.2-819-r780-android-arm64-v8a.apk',  size:'19.8 MB'}
+  ]},
+  {tag:'unsigned-v2026.11.1-659-r779', date:'2026-11-01', time:'11-01 06:59', assets:[
+    {abi:'arm64-v8a',  name:'FanqieNovelDownloader-2026.11.1-659-r779-android-arm64-v8a.apk',  size:'19.7 MB'}
+  ]},
+  {tag:'unsigned-v2026.10.31-1543-r777', date:'2026-10-31', time:'10-31 15:43', assets:[
+    {abi:'arm64-v8a',  name:'FanqieNovelDownloader-2026.10.31-1543-r777-android-arm64-v8a.apk',size:'19.7 MB'}
+  ]}
+];
+const ABIS = ['arm64-v8a','armeabi-v7a','universal','x86_64'];
+let abiPref = 'arm64-v8a';
+
+const abiLabel = a => a === 'universal' ? '通用包' : a;
+function filterAbi(list){
+  const keep = list.filter(x => x.abi === abiPref);
+  return keep.length ? keep : list;
+}
+function chipRow(){
+  return `<div class="abi-bar">${ABIS.concat(['']).map(a =>
+    `<span class="abi-chip ${a===abiPref?'on':''}" data-abi="${a}">${a?abiLabel(a):'全部'}</span>`).join('')}</div>`;
+}
+
+let batchMode = false;
+const picked = new Set();
+/* 演示用：这个文件之前已经下完 */
+const DONE_FILES = new Set(['FanqieNovelDownloader-2026.11.2-1446-r781-android-arm64-v8a.apk']);
+
+/* 挑文件方式的开关在设置页，版本页里不再出现 */
+function paintModeSeg(){
+  const seg = document.getElementById('modeSeg');
+  if (!seg) return;
+  document.getElementById('modeThumb').style.transform = `translateX(${batchMode?100:0}%)`;
+  seg.querySelectorAll('span').forEach(el=>{
+    el.classList.toggle('on', (el.dataset.v === '1') === batchMode);
+  });
+  const sub = document.getElementById('modeSub');
+  if (sub) sub.textContent = batchMode
+    ? '每行前面有方框，勾选几个后一次性测速、并发下载'
+    : '点一个文件就直接测速下载，适合只要一个包的情况';
+}
+function setMode(v){
+  if (batchMode === v) return;
+  batchMode = v;
+  picked.clear();
+  paintModeSeg();
+  paintFoot();
+}
+(function bindSeg(){
+  const seg = document.getElementById('modeSeg');
+  if (!seg) return;
+  const thumb = document.getElementById('modeThumb');
+  let dragging = false, startX = 0, base = 0, moved = false;
+
+  const ratio = (clientX) => {
+    const r = seg.getBoundingClientRect();
+    let p = (clientX - r.left - 3) / (r.width - 6);
+    return Math.max(0, Math.min(1, p));
+  };
+  const paint = (p) => { thumb.style.transform = `translateX(${p*100}%)`; };
+
+  seg.addEventListener('pointerdown', e => {
+    dragging = true; moved = false;
+    startX = e.clientX; base = batchMode ? 100 : 0;
+    seg.classList.add('dragging');
+    seg.setPointerCapture(e.pointerId);
+  });
+  seg.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    if (Math.abs(e.clientX - startX) > 4) moved = true;
+    paint(ratio(e.clientX));
+  });
+  const end = e => {
+    if (!dragging) return;
+    dragging = false;
+    seg.classList.remove('dragging');
+    const p = moved ? ratio(e.clientX) : (e.clientX - seg.getBoundingClientRect().left < seg.clientWidth/2 ? 0 : 1);
+    setMode(p >= 0.5);
+    paint(batchMode ? 1 : 0);
+  };
+  seg.addEventListener('pointerup', end);
+  seg.addEventListener('pointercancel', e => {
+    if (!dragging) return;
+    dragging = false;
+    seg.classList.remove('dragging');
+    paint(batchMode ? 1 : 0);
+  });
+})();
+function assetRow(tag, a, i){
+  const done = DONE_FILES.has(a.name);
+  const on = picked.has(a.name);
+  return `<div class="v-pick ${on?'on':''}" onclick="tapAsset('${tag}','${a.name}',${done})" style="margin-top:7px">
+      <div class="l1">
+        ${batchMode?`<span class="v-check ${on?'on':''}">${on?'✓':''}</span>`:''}
+        ${i===0?'<span class="v-badge">推荐</span>':''}
+        ${a.abi?abiLabel(a.abi):'其它'}
+        ${done?'<span class="v-mark">已下载</span>':''}
+        ${on?'<span class="v-mark on">已勾选</span>':''}
+        <span class="v-size">${a.size}</span></div>
+      <div class="l2">${a.name}</div>
+    </div>`;
+}
+function tapAsset(tag, name, done){
+  if (!batchMode){
+    toast('已开始测速 · ' + tag);
+    closeSheet('v'); closeSheet('p');
+    setTimeout(goDownload, 240);
+    return;
+  }
+  if (picked.has(name)) picked.delete(name);
+  else {
+    picked.add(name);
+    if (done) toast('这个文件下过，会另存为 (1)');
+  }
+  if (document.getElementById('pMask').classList.contains('on')) openPicker();
+  else openVersions();
+  paintFoot();
+}
+function paintFoot(){
+  const bar = (id) => batchMode
+    ? `<div style="display:flex;gap:10px">
+         <button class="btn ghost" style="flex:0 0 92px" onclick="closeSheet('${id==='vFoot'?'v':'p'}')">关闭</button>
+         <button class="btn primary" style="flex:1" ${picked.size?'':'disabled'}
+           onclick="startBatch('${id==='vFoot'?'v':'p'}')">${picked.size?`测速并下载 ${picked.size} 个`:'测速并下载（先勾选）'}</button>
+       </div>`
+    : `<button class="btn ghost" onclick="closeSheet('${id==='vFoot'?'v':'p'}')">${id==='vFoot'?'关闭':'取消'}</button>`;
+  document.getElementById('vFoot').innerHTML = bar('vFoot');
+  document.getElementById('pFoot').innerHTML = bar('pFoot');
+}
+function startBatch(k){
+  if (!picked.size){ toast('先勾上要下的文件'); return; }
+  toast('已加入 ' + picked.size + ' 个文件 · 统一测速后并发下载');
+  closeSheet(k);
+  picked.clear();
+  paintFoot();
+  setTimeout(goDownload, 240);
+}
+function openVersions(){
+  const body = document.getElementById('vBody');
+  body.innerHTML = chipRow() + RELEASES.map((r,i)=>{
+    const picks = filterAbi(r.assets);
+    const apkCount = r.assets.filter(a=>a.name.endsWith('.apk')).length;
+    return `<div class="v-row">
+      <div class="v-tag"><b>${r.tag}</b><span>${i===0?'最新 · ':''}${r.time || r.date}</span></div>
+      ${assetRow(r.tag, picks[0], 0)}
+      ${apkCount>1?`<div class="v-pick" style="text-align:center;color:var(--text2);font-size:12px"
+        onclick="openPicker()">共 ${apkCount} 个安装包 · 换架构 ›</div>`:''}
+    </div>`;
+  }).join('');
+  bindAbi(document.getElementById('vBody'));
+  paintFoot();
+  document.getElementById('vMask').classList.add('on');
+}
+function openPicker(){
+  const r = RELEASES[0];
+  const body = document.getElementById('pBody');
+  body.innerHTML = chipRow()
+    + `<div style="font-size:11px;color:var(--text3);margin:4px 0 2px">${r.tag} · ${r.assets.length} 个文件 · 当前 ${abiLabel(abiPref)}</div>`
+    + filterAbi(r.assets).map((a,i)=>assetRow(r.tag, a, i)).join('');
+  bindAbi(document.getElementById('pBody'));
+  paintFoot();
+  document.getElementById('pMask').classList.add('on');
+}
+function bindAbi(root){
+  root.querySelectorAll('.abi-chip').forEach(c=>{
+    c.onclick = () => {
+      abiPref = c.dataset.abi;
+      if (document.getElementById('vMask').classList.contains('on')) openVersions();
+      if (document.getElementById('pMask').classList.contains('on')) openPicker();
+    };
+  });
+}
+function pick(tag, abi){
+  if (abi) abiPref = abi;
+  closeSheet('v'); closeSheet('p');
+  if (abi || tag) toast('以后默认只看 ' + abiLabel(abiPref));
+  setTimeout(goDownload, 260);
+}
+function closeSheet(k){
+  document.getElementById('vMask').classList.remove('on');
+  document.getElementById('pMask').classList.remove('on');
+  const n = document.getElementById('nMask');
+  if (n) n.classList.remove('on');
+  const d = document.getElementById('dMask');
+  if (d) d.classList.remove('on');
+}
+function goDownload(){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));
+  document.querySelector('[data-s="s-home"]').classList.add('on');
+  document.getElementById('s-home').classList.add('on');
+  document.getElementById('urlField').textContent =
+    'https://github.com/POf-L/Fanqie-novel-Downloader/releases/download/unsigned-v2026.11.3-1650-r785/FanqieNovelDownloader-2026.11.3-1650-r785-android-arm64-v8a.apk';
+  setTimeout(runSpeedTest, 200);
+  toast('已切到下载台，自动测速');
+}
+
+
+/* ---- 镜像管理：调顺序 / 删除 / 拼接模式 / 并发数 ---- */
+/* 按住手柄拖动排序：跟手 + 其它行实时让位 */
+let mirDrag = null;
+function initMirDrag(){
+  document.querySelectorAll('#mirrorPrefs .mir-row').forEach(row => {
+    const h = row.querySelector('.mir-handle');
+    if (!h) return;
+    h.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      mirDrag = { row, box: row.parentElement, startY: e.clientY, moved: false };
+      row.classList.add('dragging');
+      if (h.setPointerCapture) h.setPointerCapture(e.pointerId);
+      document.addEventListener('pointermove', onMirDragMove);
+      document.addEventListener('pointerup', onMirDragEnd);
+      document.addEventListener('pointercancel', onMirDragEnd);
+    });
+  });
+}
+function onMirDragMove(e){
+  const d = mirDrag; if (!d) return;
+  const dy = e.clientY - d.startY;
+  if (Math.abs(dy) > 3) d.moved = true;
+  d.row.style.transform = 'translateY(' + dy + 'px)';
+  const kids = [...d.box.children].filter(el => el.classList.contains('mir-row'));
+  for (let i = 0; i < kids.length; i++) {
+    const s = kids[i];
+    if (s === d.row) continue;
+    const b = s.getBoundingClientRect();
+    const r = d.row.getBoundingClientRect();
+    const ri = kids.indexOf(d.row), si = i;
+    if (si < ri && r.top + r.height / 2 < b.top + b.height / 2) {
+      d.box.insertBefore(d.row, s);
+      d.startY += b.height;
+      d.row.style.transform = 'translateY(' + (e.clientY - d.startY) + 'px)';
+      break;
+    }
+    if (si > ri && r.top + r.height / 2 > b.top + b.height / 2) {
+      d.box.insertBefore(d.row, s.nextSibling);
+      d.startY -= b.height;
+      d.row.style.transform = 'translateY(' + (e.clientY - d.startY) + 'px)';
+      break;
+    }
+  }
+}
+function onMirDragEnd(){
+  const d = mirDrag; if (!d) return;
+  mirDrag = null;
+  document.removeEventListener('pointermove', onMirDragMove);
+  document.removeEventListener('pointerup', onMirDragEnd);
+  document.removeEventListener('pointercancel', onMirDragEnd);
+  d.row.classList.remove('dragging');
+  d.row.style.transform = '';
+  if (d.moved) toast('顺序已保存 · 测速按这个顺序');
+}
+function delMir(btn){
+  const row = btn.closest('.mir-row');
+  const name = row.querySelector('.mir-k').childNodes[0].textContent.trim();
+  if (confirm('删除「' + name + '」？')) { row.remove(); toast('已删除 ' + name); }
+}
+function setAddMode(m){
+  document.getElementById('addModePrefix').classList.toggle('on', m === 'prefix');
+  document.getElementById('addModePath').classList.toggle('on', m === 'path');
+  document.getElementById('addHint').textContent = m === 'path'
+    ? '拼 GitHub 路径：https://xget.xi-xu.me/gh/ → 后面接 owner/repo/releases/...（自动去掉 https://github.com/）'
+    : '拼完整链接：https://ghfast.top/ → 后面接完整的 https://github.com/owner/repo/...';
+}
+/* ---- 数字设置弹层（并发 / 连接数 / 分片 / 超时 / 复用周期） ---- */
+let numOpt = null;
+function askNum(opt){
+  numOpt = opt;
+  document.getElementById('nTitle').textContent = opt.title;
+  document.getElementById('nHint').textContent = opt.hint + '（' + opt.min + '~' + opt.max + ' ' + opt.unit + '）';
+  const input = document.getElementById('nInput');
+  input.value = opt.cur;
+  const box = document.getElementById('nChips');
+  box.innerHTML = (opt.presets || []).map(p =>
+    '<span class="fchip' + (p === opt.cur ? ' on' : '') + '" data-v="' + p + '">' + p + '</span>').join('');
+  box.querySelectorAll('.fchip').forEach(c => c.onclick = () => {
+    input.value = c.dataset.v;
+    box.querySelectorAll('.fchip').forEach(x => x.classList.remove('on'));
+    c.classList.add('on');
+  });
+  input.oninput = () => box.querySelectorAll('.fchip').forEach(x => x.classList.remove('on'));
+  document.getElementById('nMask').classList.add('on');
+  setTimeout(() => input.focus(), 220);
+}
+function numOk(){
+  if (!numOpt) return;
+  const v = parseInt(document.getElementById('nInput').value, 10);
+  if (isNaN(v)) { toast('请输入 ' + numOpt.min + '~' + numOpt.max + ' 的数字'); return; }
+  if (v < numOpt.min || v > numOpt.max) { toast('超出范围，只能填 ' + numOpt.min + '~' + numOpt.max); return; }
+  numOpt.onOk(v);
+  closeSheet('n');
+}
+function askConc(){
+  const cur = parseInt(document.getElementById('concVal').textContent, 10) || 3;
+  askNum({ title: '同时下载任务数', hint: '一次最多同时下载几个文件', cur: cur, min: 1, max: 10, unit: '个',
+    presets: [1, 2, 3, 5, 8, 10],
+    onOk: v => {
+      document.getElementById('concVal').textContent = v + ' 个 ›';
+      document.getElementById('concSub').textContent = v === 1
+        ? '单任务独占带宽，一次只下一个文件'
+        : '最多 ' + v + ' 个文件同时下载，共用同一份镜像排名';
+      toast('并发任务数已设为 ' + v);
+    } });
+}
+function askThreads(){
+  const on = document.getElementById('swMulti').classList.contains('on');
+  if (!on) { toast('先打开「单文件多线程」'); return; }
+  const cur = parseInt(document.getElementById('threadsVal').textContent, 10) || 10;
+  askNum({ title: '每个文件连接数', hint: '把一个文件切成几段同时拉', cur: cur, min: 1, max: 10, unit: '段',
+    presets: [1, 2, 4, 6, 10],
+    onOk: v => {
+      document.getElementById('threadsVal').textContent = v + ' 线程 ›';
+      document.getElementById('threadsSub').textContent = v === 1
+        ? '单连接下载，逐段读取'
+        : '每个文件切 ' + v + ' 段并发拉取，镜像支持 Range 时生效';
+      toast(v === 1 ? '已改为单连接' : '每个文件 ' + v + ' 段并发');
+    } });
+}
+/* 探测分片：设置里改完，镜像页说明和结果行都要跟着变，不能写死 */
+let chunkKB = 256;
+const chunkLabel = () => chunkKB % 1024 === 0 ? (chunkKB / 1024) + ' MB' : chunkKB + ' KB';
+function paintChunk(){
+  const n = document.getElementById('mirrorNoteChunk');
+  if (n) n.textContent = chunkLabel();
+  const v = document.getElementById('chunkVal');
+  if (v) v.textContent = chunkKB + ' KB ›';
+  document.querySelectorAll('.chunk-tag').forEach(el => el.textContent = 'Range · ' + chunkLabel());
+}
+function askChunk(){
+  askNum({ title: '探测分片', hint: '测速时每个镜像拉多少数据来估算速度', cur: 256, min: 32, max: 4096, unit: 'KB',
+    presets: [128, 256, 512, 1024],
+    onOk: v => { chunkKB = v; paintChunk(); toast('探测分片已设为 ' + v + ' KB'); } });
+}
+function askTimeout(){
+  askNum({ title: '单个镜像超时', hint: '超过这个时间没测完，直接判负换下一个', cur: 8, min: 3, max: 60, unit: '秒',
+    presets: [5, 8, 12, 20],
+    onOk: v => { document.getElementById('timeoutVal').textContent = v + ' 秒 ›'; toast('单镜像超时已设为 ' + v + ' 秒'); } });
+}
+function askTtl(){
+  if (!document.getElementById('swCache').classList.contains('on')) { toast('先打开「复用测速结果」'); return; }
+  askNum({ title: '复用周期', hint: '这段时间内再下载，直接沿用上次排名', cur: 10, min: 1, max: 720, unit: '分钟',
+    presets: [5, 10, 30, 60],
+    onOk: v => {
+      document.getElementById('ttlVal').textContent = v + ' 分钟 ›';
+      document.getElementById('cacheSub').textContent = v + ' 分钟内复用同一份测速排名';
+      toast('测速结果复用 ' + v + ' 分钟');
+    } });
+}
+
+initMirDrag();
+
+/* ---- 保存位置选择 ---- */
+function chooseSavePath(){
+  const cur = document.getElementById('savePathVal').textContent;
+  const pick = prompt('文件保存到哪？\n\n1 = 系统「下载」目录 /Download/LightMirror（推荐）\n2 = 应用私有目录（卸载即清理）\n3 = 自定义路径',
+                      cur.indexOf('系统') >= 0 ? '1' : (cur.indexOf('自定义') >= 0 ? '3' : '2'));
+  if (pick === null) return;
+  const el = document.getElementById('savePathVal');
+  if (pick.trim() === '1') { el.textContent = '系统下载 ›'; toast('已切到 /Download/LightMirror'); }
+  else if (pick.trim() === '2') { el.textContent = '应用私有 ›'; toast('已改为应用私有目录'); }
+  else if (pick.trim() === '3') {
+    const path = prompt('填完整路径，例如 /storage/emulated/0/MyApp', '/storage/emulated/0/MyApp');
+    if (!path) return;
+    el.textContent = '自定义 ›'; toast('以后都存到 ' + path);
+  }
+}
+
+/* ================= tab 切换 ================= */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById(t.dataset.s).classList.add('on');
+  });
+});
+
+/* ================= 开关 ================= */
+document.querySelectorAll('.switch').forEach(s=>{
+  s.addEventListener('click',()=>s.classList.toggle('on'));
+});
+
+/* ================= toast ================= */
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('on'), 1600);
+}
+
+/* ================= 粘贴 ================= */
+document.getElementById('pasteBtn').addEventListener('click',()=>{
+  toast('已从剪贴板读取链接');
+  document.getElementById('urlField').classList.remove('ph');
+});
+
+/* ================= 测速流程（串行） ================= */
+let testing = false;
+async function runSpeedTest(){
+  const hint = document.getElementById('mirrorHint');
+  const btn = document.getElementById('startBtn');
+  testing = true;
+  btn.disabled = true;
+  btn.textContent = '正在测速…';
+
+  for(let i=0;i<MIRRORS.length;i++){
+    const row = rows[i];
+    const m = MIRRORS[i];
+    row.classList.remove('win','dead');
+    hint.textContent = `正在测试 ${i+1}/${MIRRORS.length} · ${m.name}`;
+    row.querySelector('.m-right').innerHTML = '<div class="scanning"><i></i><i></i><i></i></div>';
+    row.querySelector('.m-meta').innerHTML = '<span class="lat" style="color:#2BE3A7">探测中…</span>';
+    row.querySelector('.bar i').style.width = '0%';
+    await wait(320 + Math.random()*260);
+
+    if(m.fail){
+      row.classList.add('dead');
+      row.querySelector('.m-right').innerHTML = '<div class="m-fail">'+m.fail+'</div>';
+      row.querySelector('.m-meta').innerHTML = '<span>无响应</span>';
+      continue;
+    }
+    const score = Math.round((m.spd/MAX_SPD)*70 + (1-Math.min(m.lat,800)/800)*30);
+    row.querySelector('.m-right').innerHTML =
+      `<div class="m-speed">${m.spd}<small>MB/s</small></div><div class="m-lat ${m.lat<250?'fast':''}">${m.lat} ms</div>`;
+    row.querySelector('.m-meta').innerHTML =
+      `<span class="lat">得分 ${score}</span><span class="chunk-tag">Range · ${chunkLabel()}</span>`;
+    row.querySelector('.bar i').style.width = Math.max(6,score)+'%';
+  }
+
+  /* 选出最快：速度优先 + 延迟加权 */
+  let best = -1, bestScore = -1;
+  MIRRORS.forEach((m,i)=>{
+    if(m.fail) return;
+    const s = (m.spd/MAX_SPD)*70 + (1-Math.min(m.lat,800)/800)*30;
+    if(s>bestScore){bestScore=s;best=i;}
+  });
+  rows[best].classList.add('win');
+  rows[best].querySelector('.badge').style.display = 'inline-block';
+  hint.textContent = `最快：${MIRRORS[best].name} · ${MIRRORS[best].spd} MB/s`;
+  btn.disabled = false;
+  btn.textContent = '测速并下载';
+  testing = false;
+  startDownload(best);
+}
+
+/* ================= 下载（单任务） ================= */
+let dl = {timer:null, pct:0, paused:false, samples:[], start:0, pausedAt:0, pausedTotal:0};
+const wave = document.getElementById('wave');
+const wctx = wave.getContext('2d');
+
+function startDownload(idx){
+  const m = MIRRORS[idx];
+  document.getElementById('dlWrap').style.display = 'block';
+  document.getElementById('dlSrc').textContent = `via ${m.name} · 4 线程`;
+  toast(`已锁定 ${m.name}，开始单任务下载`);
+  dl.pct = 0; dl.paused = false; dl.samples = []; dl.start = Date.now(); dl.pausedAt = 0; dl.pausedTotal = 0;
+  const btn = document.getElementById('pauseBtn');
+  btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="#E8EEF6"><rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/></svg> 暂停';
+  clearInterval(dl.timer);
+  dl.timer = setInterval(tick, 220);
+  setTimeout(()=>{ document.getElementById('dlWrap').scrollIntoView({behavior:'smooth',block:'center'}); }, 120);
+}
+
+function tick(){
+  if(dl.paused) return;
+  const base = 8.4, jitter = (Math.random()-0.4)*1.6;
+  const spd = Math.max(2.4, base + jitter);
+  dl.samples.push(spd);
+  if(dl.samples.length>46) dl.samples.shift();
+  dl.pct = Math.min(100, dl.pct + spd*0.22/(TOTAL_MB*10)*100*1.9);
+  paint(spd);
+  if(dl.pct>=100){
+    clearInterval(dl.timer);
+    document.getElementById('dlSrc').textContent = '已完成 · 已保存到 /Download';
+    toast('下载完成');
+  }
+}
+
+function paint(spd){
+  const got = (dl.pct/100*TOTAL_MB);
+  document.getElementById('pct').innerHTML = Math.floor(dl.pct)+'<small>%</small>';
+  document.getElementById('progBar').style.width = dl.pct+'%';
+  document.getElementById('spd').textContent = spd.toFixed(1);
+  document.getElementById('got').textContent = got.toFixed(1);
+  const rest = (TOTAL_MB-got)/spd*60;
+  const mm = Math.floor(rest/60), ss = Math.floor(rest%60);
+  document.getElementById('eta').textContent = `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  const el = Math.max(0, Math.floor((Date.now() - dl.start - dl.pausedTotal)/1000));
+  document.getElementById('elapsed').textContent =
+    `${String(Math.floor(el/60)).padStart(2,'0')}:${String(el%60).padStart(2,'0')}`;
+  drawWave();
+}
+
+function drawWave(){
+  const w = wave.width, h = wave.height;
+  wctx.clearRect(0,0,w,h);
+  const s = dl.samples;
+  if(s.length<2) return;
+  const step = w/(46-1);
+  const grad = wctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,'rgba(43,227,167,.45)');
+  grad.addColorStop(1,'rgba(43,227,167,0)');
+  wctx.beginPath();
+  wctx.moveTo(0,h);
+  s.forEach((v,i)=>wctx.lineTo(i*step, h - (v/12)*h*0.95));
+  wctx.lineTo((s.length-1)*step,h);
+  wctx.closePath();
+  wctx.fillStyle = grad; wctx.fill();
+  wctx.beginPath();
+  s.forEach((v,i)=>{ const x=i*step, y=h-(v/12)*h*0.95; i?wctx.lineTo(x,y):wctx.moveTo(x,y); });
+  wctx.strokeStyle = '#2BE3A7'; wctx.lineWidth = 1.8; wctx.lineJoin='round'; wctx.stroke();
+}
+
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+
+document.getElementById('startBtn').addEventListener('click',()=>{
+  if(testing) return;
+  runSpeedTest();
+});
+document.getElementById('pauseBtn').addEventListener('click',function(){
+  dl.paused = !dl.paused;
+  this.innerHTML = dl.paused
+    ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="#2BE3A7"><path d="M7 4l13 8-13 8z"/></svg> <span style="color:#2BE3A7">继续</span>'
+    : '<svg width="15" height="15" viewBox="0 0 24 24" fill="#E8EEF6"><rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/></svg> 暂停';
+  toast(dl.paused?'已暂停':'继续下载');
+});
+document.getElementById('cancelBtn').addEventListener('click',()=>{
+  clearInterval(dl.timer);
+  document.getElementById('dlWrap').style.display = 'none';
+  toast('任务已取消，镜像排名保留');
+});
+/* ------------- 下载记录：勾选删除 / 清空 / 显示条数 ------------- */
+const HIST_OK = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2BE3A7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"/></svg>';
+const HIST_BAD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF5C5C" stroke-width="2.2" stroke-linecap="round"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>';
+
+let HIST_MAX = 20;
+let HISTORY = [
+  { day: '今天', file: 'yt-dlp.exe', repo: 'yt-dlp/yt-dlp', size: '17.2 MB', mirror: 'ghfast.top', speed: '8.4 MB/s', time: '09:38', ok: true },
+  { day: '今天', file: 'Magisk-v27.0.apk', repo: 'topjohnwu/Magisk', size: '11.8 MB', mirror: 'gh-proxy.com', speed: '6.9 MB/s', time: '08:12', ok: true },
+  { day: '今天', file: 'rust-1.83-x86_64.tar.gz', repo: 'rust-lang/rust', size: '—', mirror: '3 个镜像均超时', speed: '中断', time: '07:55', ok: false },
+  { day: '昨天', file: 'obsidian-1.7.7.apk', repo: 'obsidianmd/obsidian-releases', size: '92.4 MB', mirror: 'ghfast.top', speed: '11.2 MB/s', time: '22:41', ok: true },
+  { day: '昨天', file: 'LightMirror-1.8.3.apk', repo: 'xi-xu/lightmirror', size: '164 KB', mirror: 'xget.xi-xu.me', speed: '4.1 MB/s', time: '21:03', ok: true }
+];
+let histPicking = false;
+const histSel = new Set();
+let delScope = 'sel';
+
+function histRow(it) {
+  const on = histSel.has(it.file);
+  return `<div class="hrow ${on ? 'picked' : ''}" onclick="tapHist('${it.file}')">
+      ${histPicking ? `<div class="h-pick ${on ? 'on' : ''}">${on ? '✓' : ''}</div>` : ''}
+      <div class="hico ${it.ok ? 'ok' : 'bad'}">${it.ok ? HIST_OK : HIST_BAD}</div>
+      <div class="h-main">
+        <div class="h-file">${it.file}</div>
+        <div class="h-sub">${it.repo} · ${it.size === '—' ? '' : it.size + ' · '}${it.mirror}</div>
+      </div>
+      <div class="h-right" ${it.ok ? '' : 'style="color:#FF5C5C"'}>${it.speed}<br><span style="opacity:.7">${it.time}</span></div>
+    </div>`;
+}
+
+function renderHistory() {
+  const box = document.getElementById('historyScroll');
+  const shown = HISTORY.slice(0, HIST_MAX);
+  document.getElementById('historySub').textContent = HISTORY.length
+    ? `共 ${HISTORY.length} 条 · 显示最近 ${shown.length} 条 · 点此改`
+    : '共 0 条 · 保存在本机';
+
+  const pick = document.getElementById('histPickBtn');
+  pick.textContent = histPicking ? '取消' : '选择';
+  pick.classList.toggle('on', histPicking);
+  document.getElementById('histBar').classList.toggle('on', histPicking);
+
+  const allOn = shown.length > 0 && shown.every(it => histSel.has(it.file));
+  document.getElementById('histAllBtn').textContent = allOn ? '取消全选' : '全选';
+  const del = document.getElementById('histDelBtn');
+  del.textContent = histSel.size ? `删除选中 ${histSel.size} 条` : '删除选中（先勾选）';
+  del.disabled = histSel.size === 0;
+
+  if (!shown.length) {
+    box.innerHTML = `<div class="empty">
+        <div class="ring"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#5C6B7C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M12 14l-3.5-3.5M12 14l3.5-3.5"/><path d="M4.5 16v2.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V16"/></svg></div>
+        <h4>还没有下载记录</h4>
+        <p>去下载台粘一个 GitHub 链接，测速后会留下每个任务的速度与镜像来源。</p>
+      </div>`;
+    return;
+  }
+
+  let html = '', lastDay = '', open = false;
+  shown.forEach(it => {
+    if (it.day !== lastDay) {
+      if (open) html += '</div>';
+      html += `<div class="day">${it.day}</div><div class="card tight" style="padding:2px 14px">`;
+      open = true;
+      lastDay = it.day;
+    }
+    html += histRow(it);
+  });
+  if (open) html += '</div>';
+
+  if (HISTORY.length > shown.length) {
+    html += `<div style="text-align:center;font-size:11px;color:var(--text-3);padding:14px 8px;line-height:1.6">
+      还有 ${HISTORY.length - shown.length} 条更早的记录没显示<br>点上方「共 ${HISTORY.length} 条」可调大上限</div>`;
+  }
+  box.innerHTML = html;
+}
+
+function tapHist(file) {
+  if (!histPicking) { toast('打开 ' + file); return; }
+  if (histSel.has(file)) histSel.delete(file); else histSel.add(file);
+  renderHistory();
+}
+function togglePick() {
+  histPicking = !histPicking;
+  histSel.clear();
+  renderHistory();
+}
+function toggleAll() {
+  const shown = HISTORY.slice(0, HIST_MAX);
+  const allOn = shown.every(it => histSel.has(it.file));
+  histSel.clear();
+  if (!allOn) shown.forEach(it => histSel.add(it.file));
+  renderHistory();
+}
+function askHistoryMax() {
+  askNum({
+    title: '历史记录显示条数', hint: '列表最多显示多少条，调小不会删掉记录',
+    cur: HIST_MAX, min: 5, max: 200, unit: '条', presets: [10, 20, 50, 100],
+    onOk: v => {
+      HIST_MAX = v;
+      renderHistory();
+      const val = document.getElementById('histMaxVal');
+      const sub = document.getElementById('histMaxSub');
+      if (val) val.textContent = v + ' 条 ›';
+      if (sub) sub.textContent = '列表最多显示 ' + v + ' 条，调小不会删掉记录';
+      toast('历史最多显示 ' + v + ' 条');
+    }
+  });
+}
+function askDelete(scope) {
+  const n = scope === 'all' ? HISTORY.length : histSel.size;
+  if (!n) { toast(scope === 'all' ? '还没有下载记录' : '先勾选要删除的记录'); return; }
+  delScope = scope;
+  document.getElementById('dTitle').textContent =
+    scope === 'all' ? `清空全部 ${n} 条记录` : `删除 ${n} 条记录`;
+  document.getElementById('dFileHint').textContent =
+    `${n} 个对应的文件会被永久删除，无法恢复`;
+  document.getElementById('dMask').classList.add('on');
+}
+function doDelete(withFiles) {
+  const n = delScope === 'all' ? HISTORY.length : histSel.size;
+  if (delScope === 'all') HISTORY = [];
+  else HISTORY = HISTORY.filter(it => !histSel.has(it.file));
+  histSel.clear();
+  if (!HISTORY.length) histPicking = false;
+  closeSheet('d');
+  renderHistory();
+  toast(withFiles ? `已删除 ${n} 条记录 · 文件已删除` : `已删除 ${n} 条记录 · 文件保留`);
+}
+
+renderHistory();
+
+/* 初始绘制一下波形底 */
+drawWave();
+
+/* 主题切换 */
+document.querySelectorAll('.tbtn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.body.classList.remove('light','mono');
+    if (b.dataset.theme === 'light') document.body.classList.add('light');
+    if (b.dataset.theme === 'mono') document.body.classList.add('mono');
+  });
+});
+
+/* 直接看「测速完成 + 下载中」状态：xxx.html#run */
+if (location.hash === '#run') {
+  setTimeout(runSpeedTest, 260);
+}
+</script>
+<script>
+window.addEventListener('load', () => {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('shot')) return;
+  const k = q.get('shot');
+  if (k === 'mirrors') { document.querySelector('[data-s="s-mirrors"]').click(); return; }
+  if (k === 'settings') {
+    document.querySelector('[data-s="s-settings"]').click();
+    return;
+  }
+  if (k === 'threads') {
+    document.querySelector('[data-s="s-settings"]').click();
+    setTimeout(()=>{ askThreads(); const i=document.getElementById('nInput'); i.value='10'; i.dispatchEvent(new Event('input')); }, 120);
+    return;
+  }
+  if (k === 'num') {
+    document.querySelector('[data-s="s-settings"]').click();
+    setTimeout(()=>{ askConc(); const i=document.getElementById('nInput'); i.value='7'; i.dispatchEvent(new Event('input')); }, 120);
+    return;
+  }
+  if (k === 'tasks') {
+    document.getElementById('dlWrap').style.display = 'block';
+    setTimeout(()=>{ document.querySelector('#s-home .scroll').scrollTop = 99999; }, 60);
+    return;
+  }
+  if (k === 'hist' || k === 'del') {
+    document.querySelector('[data-s="s-history"]').click();
+    setTimeout(()=>{
+      if (k === 'del') {
+        togglePick();
+        histSel.add(HISTORY[0].file);
+        renderHistory();
+        askDelete('sel');
+      } else {
+        togglePick();
+        histSel.add(HISTORY[1].file);
+        renderHistory();
+      }
+    }, 180);
+    return;
+  }
+  const tab = document.querySelector('[data-s="s-watch"]');
+  tab.click();
+  if (k === 'batch') {
+    setTimeout(()=>{
+      batchMode = true;
+      paintModeSeg();
+      openVersions();
+      picked.add('FanqieNovelDownloader-2026.11.3-1650-r785-android-arm64-v8a.apk');
+      picked.add('FanqieNovelDownloader-2026.11.3-251-r783-android-arm64-v8a.apk');
+      openVersions();
+    }, 200);
+    return;
+  }
+  if (k === 'pickerbatch') {
+    setTimeout(()=>{
+      batchMode = true;
+      paintModeSeg();
+      openPicker();
+      picked.add('FanqieNovelDownloader-2026.11.3-1650-r785-android-arm64-v8a.apk');
+      picked.add('FanqieNovelDownloader-2026.11.3-1650-r785-android-universal.apk');
+      openPicker();
+    }, 200);
+    return;
+  }
+  setTimeout(()=>{ (k==='picker'?openPicker:openVersions)(); }, 200);
+});
+</script>
+</body>
+</html>

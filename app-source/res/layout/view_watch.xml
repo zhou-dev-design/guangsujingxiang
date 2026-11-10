@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/screenWatch"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_watch"
+                android:textColor="?attr/cText"
+                android:textSize="?attr/dT4"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="盯住项目的最新 release，只下你要的格式"
+                android:textColor="?attr/cText3"
+                android:textSize="?attr/dT1" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none"
+        android:clipToPadding="false"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="项目地址"
+                    android:textColor="?attr/cText3"
+                    android:textSize="?attr/dT1" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/watchInput"
+                        android:layout_width="0dp"
+                        android:layout_height="?attr/dBtnH"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_input"
+                        android:hint="github.com/owner/repo"
+                        android:inputType="textUri"
+                        android:imeOptions="actionGo"
+                        android:maxLines="1"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="10dp"
+                        android:textColor="?attr/cText"
+                        android:textColorHint="?attr/cText3"
+                        android:textSize="?attr/dT2" />
+
+                    <Button
+                        android:id="@+id/btnWatchAdd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="?attr/dBtnH"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_primary"
+                        android:minWidth="72dp"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:stateListAnimator="@null"
+                        android:text="追踪"
+                        android:textColor="?attr/cOnPrimary"
+                        android:textSize="?attr/dT2"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/fmtSummary"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_chip"
+                        android:ellipsize="end"
+                        android:gravity="center_vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:singleLine="true"
+                        android:text="追踪格式 APK / ZIP / RAR / PDF  ›"
+                        android:textColor="?attr/cPrimary"
+                        android:textSize="?attr/dT1" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="大范围在「设置 → 追踪格式」里统一勾选或添加；每个项目卡片右上角还能单独收窄，只会列出该项目真实存在的格式。"
+                    android:textColor="?attr/cText3"
+                    android:textSize="?attr/dT0" />
+
+                <TextView
+                    android:id="@+id/watchHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="支持 owner/repo、仓库主页、releases 页面地址"
+                    android:textColor="?attr/cText3"
+                    android:textSize="?attr/dT1" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="追踪列表"
+                    android:textColor="?attr/cText"
+                    android:textSize="?attr/dT3"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/watchCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:text="0 个"
+                    android:textColor="?attr/cText3"
+                    android:textSize="?attr/dT1" />
+
+                <Button
+                    android:id="@+id/btnWatchRefresh"
+                    android:layout_width="wrap_content"
+                    android:layout_height="?attr/dBtnH"
+                    android:background="@drawable/bg_ghost"
+                    android:minWidth="88dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:stateListAnimator="@null"
+                    android:text="检查更新"
+                    android:textColor="?attr/cText2"
+                    android:textSize="?attr/dT1" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/watchList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical" />
+
+            <LinearLayout
+                android:id="@+id/watchEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingTop="26dp"
+                android:paddingBottom="26dp"
+                android:background="@drawable/bg_card">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_empty_dl"
+                    android:contentDescription="空" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="还没有追踪任何项目"
+                    android:textColor="?attr/cText"
+                    android:textSize="?attr/dT2" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="填一个仓库地址，自动找出最新 release 里的 APK、ZIP、PDF 等文件"
+                    android:textColor="?attr/cText3"
+                    android:textSize="?attr/dT1" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

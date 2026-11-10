@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">光速镜像</string>
+    <string name="title_home">镜像下载台</string>
+    <string name="title_history">下载记录</string>
+    <string name="title_mirrors">镜像源</string>
+    <string name="title_settings">设置</string>
+    <string name="hint_url">粘贴 GitHub 链接…</string>
+    <string name="btn_start">测速并下载</string>
+    <string name="btn_testing">正在测速…</string>
+    <string name="tab_home">下载台</string>
+    <string name="tab_watch">版本</string>
+    <string name="title_watch">版本追踪</string>
+    <string name="tab_history">记录</string>
+    <string name="tab_mirror">镜像</string>
+    <string name="tab_settings">设置</string>
+</resources>

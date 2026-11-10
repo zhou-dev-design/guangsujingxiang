@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 删除弹窗的两个选项，给自动化和测试定位用 -->
+    <item name="optKeepRecords" type="id" />
+    <item name="optDeleteFiles" type="id" />
+</resources>

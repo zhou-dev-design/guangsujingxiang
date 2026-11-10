@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ============ 深色 ============ -->
+    <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorPrimaryDark">@color/bg</item>
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text2</item>
+        <item name="android:textColorHint">@color/text3</item>
+
+        <item name="cBg">#FF0B0F14</item>
+        <item name="cSurface">#FF141B24</item>
+        <item name="cSurface2">#FF1B242F</item>
+        <item name="cLine">#14FFFFFF</item>
+        <item name="cLineStrong">#24FFFFFF</item>
+        <item name="cText">#FFE8EEF6</item>
+        <item name="cText2">#FF8B9AAC</item>
+        <item name="cText3">#FF5C6B7C</item>
+        <item name="cPrimary">#FF2BE3A7</item>
+        <item name="cPrimarySoft">#1A2BE3A7</item>
+        <item name="cPrimaryLine">#522BE3A7</item>
+        <item name="cAccent">#FF4F8CFF</item>
+        <item name="cAccentSoft">#244F8CFF</item>
+        <item name="cAccentLine">#404F8CFF</item>
+        <item name="cWarn">#FFFFB020</item>
+        <item name="cDanger">#FFFF5C5C</item>
+        <item name="cDangerSoft">#1AFF5C5C</item>
+        <item name="cOnPrimary">#FF04140F</item>
+        <item name="cTabBar">#F20A0E13</item>
+        <item name="cChipText">#FF9DC0FF</item>
+        <item name="cDlStart">#FF16211F</item>
+        <item name="cDlEnd">#FF131B23</item>
+        <item name="cTrack">#14FFFFFF</item>
+        <item name="cGradStart">#FF0F7A5C</item>
+        <item name="cGradEnd">#FF2BE3A7</item>
+        <item name="cSwitchTrackOn">#552BE3A7</item>
+        <item name="cSwitchTrackOff">#FF2A3441</item>
+        <item name="cThumbOn">#FF2BE3A7</item>
+        <item name="cThumbOff">#FF8B9AAC</item>
+        <item name="monoMode">false</item>
+
+        <item name="dT0">10sp</item>
+        <item name="dT1">11sp</item>
+        <item name="dT2">14sp</item>
+        <item name="dT3">15sp</item>
+        <item name="dT4">21sp</item>
+        <item name="dT5">26sp</item>
+        <item name="dTab">10sp</item>
+        <item name="dBtnH">44dp</item>
+        <item name="dRowPad">12dp</item>
+    </style>
+
+    <!-- ============ 浅色：纸白底 + 墨绿主色 ============ -->
+    <style name="AppTheme.Light" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">#FF0A8F63</item>
+        <item name="android:colorPrimaryDark">#FFF8FAFC</item>
+        <item name="android:colorAccent">#FF0A8F63</item>
+        <item name="android:windowBackground">#FFF8FAFC</item>
+        <item name="android:statusBarColor">#FFF8FAFC</item>
+        <item name="android:navigationBarColor">#FFFFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:textColorPrimary">#FF111827</item>
+        <item name="android:textColorSecondary">#FF55637A</item>
+        <item name="android:textColorHint">#FF8A94A6</item>
+
+        <item name="cBg">#FFF8FAFC</item>
+        <item name="cSurface">#FFFFFFFF</item>
+        <item name="cSurface2">#FFF1F5F9</item>
+        <item name="cLine">#FFE4EAF2</item>
+        <item name="cLineStrong">#FFC9D4E2</item>
+        <item name="cText">#FF111827</item>
+        <item name="cText2">#FF55637A</item>
+        <item name="cText3">#FF6B7789</item>
+        <item name="cPrimary">#FF0A8F63</item>
+        <item name="cPrimarySoft">#140A8F63</item>
+        <item name="cPrimaryLine">#4D0A8F63</item>
+        <item name="cAccent">#FF2F6FEB</item>
+        <item name="cAccentSoft">#142F6FEB</item>
+        <item name="cAccentLine">#402F6FEB</item>
+        <item name="cWarn">#FFB45309</item>
+        <item name="cDanger">#FFD92D20</item>
+        <item name="cDangerSoft">#14D92D20</item>
+        <item name="cOnPrimary">#FFFFFFFF</item>
+        <item name="cTabBar">#FAFFFFFF</item>
+        <item name="cChipText">#FF2F6FEB</item>
+        <item name="cDlStart">#FFFFFFFF</item>
+        <item name="cDlEnd">#FFF7FBF9</item>
+        <item name="cTrack">#1A0B1120</item>
+        <item name="cGradStart">#FF0A8F63</item>
+        <item name="cGradEnd">#FF22C08C</item>
+        <item name="cSwitchTrackOn">#550A8F63</item>
+        <item name="cSwitchTrackOff">#FFD7DEE8</item>
+        <item name="cThumbOn">#FF0A8F63</item>
+        <item name="cThumbOff">#FF98A5B5</item>
+        <item name="monoMode">false</item>
+
+        <item name="dT0">10sp</item>
+        <item name="dT1">11sp</item>
+        <item name="dT2">14sp</item>
+        <item name="dT3">15sp</item>
+        <item name="dT4">21sp</item>
+        <item name="dT5">26sp</item>
+        <item name="dTab">10sp</item>
+        <item name="dBtnH">44dp</item>
+        <item name="dRowPad">12dp</item>
+    </style>
+
+    <!-- ============ 墨水屏黑白：纯黑白、粗描边、去渐变、字号放大 ============ -->
+    <style name="AppTheme.Mono" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">#FF000000</item>
+        <item name="android:colorPrimaryDark">#FFFFFFFF</item>
+        <item name="android:colorAccent">#FF000000</item>
+        <item name="android:windowBackground">#FFFFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFFFF</item>
+        <item name="android:navigationBarColor">#FFFFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:textColorPrimary">#FF000000</item>
+        <item name="android:textColorSecondary">#FF1A1A1A</item>
+        <item name="android:textColorHint">#FF444444</item>
+
+        <item name="cBg">#FFFFFFFF</item>
+        <item name="cSurface">#FFFFFFFF</item>
+        <item name="cSurface2">#FFFFFFFF</item>
+        <item name="cLine">#FF000000</item>
+        <item name="cLineStrong">#FF000000</item>
+        <item name="cText">#FF000000</item>
+        <item name="cText2">#FF1A1A1A</item>
+        <item name="cText3">#FF262626</item>
+        <item name="cPrimary">#FF000000</item>
+        <item name="cPrimarySoft">#FFFFFFFF</item>
+        <item name="cPrimaryLine">#FF000000</item>
+        <item name="cAccent">#FF000000</item>
+        <item name="cAccentSoft">#FFFFFFFF</item>
+        <item name="cAccentLine">#FF000000</item>
+        <item name="cWarn">#FF000000</item>
+        <item name="cDanger">#FF000000</item>
+        <item name="cDangerSoft">#FFFFFFFF</item>
+        <item name="cOnPrimary">#FFFFFFFF</item>
+        <item name="cTabBar">#FFFFFFFF</item>
+        <item name="cChipText">#FF000000</item>
+        <item name="cDlStart">#FFFFFFFF</item>
+        <item name="cDlEnd">#FFFFFFFF</item>
+        <item name="cTrack">#FFCCCCCC</item>
+        <item name="cGradStart">#FF000000</item>
+        <item name="cGradEnd">#FF000000</item>
+        <item name="cSwitchTrackOn">#FF000000</item>
+        <item name="cSwitchTrackOff">#FFFFFFFF</item>
+        <item name="cThumbOn">#FFFFFFFF</item>
+        <item name="cThumbOff">#FF000000</item>
+        <item name="monoMode">true</item>
+
+        <!-- 6 英寸 1072x1448 / 300dpi ≈ 572x772dp：字放大 2sp，按钮 48dp，行距放宽 -->
+        <item name="dT0">12sp</item>
+        <item name="dT1">13sp</item>
+        <item name="dT2">16sp</item>
+        <item name="dT3">17sp</item>
+        <item name="dT4">23sp</item>
+        <item name="dT5">30sp</item>
+        <item name="dTab">11sp</item>
+        <item name="dBtnH">48dp</item>
+        <item name="dRowPad">13dp</item>
+    </style>
+
+    <style name="TxtTitle">
+        <item name="android:textColor">?attr/cText</item>
+        <item name="android:textSize">?attr/dT4</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TxtSub">
+        <item name="android:textColor">?attr/cText3</item>
+        <item name="android:textSize">?attr/dT1</item>
+    </style>
+
+    <style name="TxtBody">
+        <item name="android:textColor">?attr/cText</item>
+        <item name="android:textSize">?attr/dT2</item>
+    </style>
+
+    <style name="TxtSection">
+        <item name="android:textColor">?attr/cText</item>
+        <item name="android:textSize">?attr/dT3</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

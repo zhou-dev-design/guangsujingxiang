@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>光速镜像</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-theme="dark">
+    <svg style="display: none" aria-hidden="true">
+      <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+        <circle cx="12" cy="12" r="8.4" /><path d="M12 7.6V12l3 1.9" />
+      </symbol>
+      <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+        <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />
+      </symbol>
+      <symbol id="i-mirror" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+        <circle cx="12" cy="12" r="8.4" /><path d="M3.8 12h16.4M12 3.6c2.3 2.4 3.4 5.4 3.4 8.4s-1.1 6-3.4 8.4c-2.3-2.4-3.4-5.4-3.4-8.4S9.7 6 12 3.6z" />
+      </symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3.1" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a1.7 1.7 0 0 0-1.6-1H1.3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 3 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 7 4.6 1.7 1.7 0 0 0 8 3V2.9a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z" />
+      </symbol>
+      <symbol id="i-paste" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="7" y="4" width="10" height="16" rx="2" /><path d="M9.5 4V3.2A1.2 1.2 0 0 1 10.7 2h2.6a1.2 1.2 0 0 1 1.2 1.2V4" /><path d="M10 10h4M10 14h4" />
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3.5v11m0 0 4-4m-4 4-4-4" /><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6" />
+      </symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l1.8 2h8.2A1.5 1.5 0 0 1 20.5 9.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" />
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12.5l4.5 4.5L19 7" />
+      </symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="7" y="5" width="3.6" height="14" rx="1.2" /><rect x="13.4" y="5" width="3.6" height="14" rx="1.2" />
+      </symbol>
+      <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.6A1 1 0 0 0 8 5.5z" />
+      </symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 7h16M9 7V5.2A1.2 1.2 0 0 1 10.2 4h3.6A1.2 1.2 0 0 1 15 5.2V7M6.5 7l.8 12.2A1.3 1.3 0 0 0 8.6 20.5h6.8a1.3 1.3 0 0 0 1.3-1.3L17.5 7" />
+      </symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 12a8 8 0 1 1-2.6-5.9" /><path d="M20 4v4.2h-4.2" />
+      </symbol>
+      <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 14.5 12 8.5l6 6" />
+      </symbol>
+      <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9.5 12 15.5l6-6" />
+      </symbol>
+      <symbol id="i-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 4h7v7M20 4l-8.5 8.5" /><path d="M18 14.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V7.5A1.5 1.5 0 0 1 5 6h4.5" />
+      </symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 13.2 13.2 20a1.6 1.6 0 0 1-2.3 0l-7-7A1.6 1.6 0 0 1 3.5 12V4.8A1.3 1.3 0 0 1 4.8 3.5H12c.4 0 .8.2 1.1.5l6.9 6.9a1.6 1.6 0 0 1 0 2.3z" /><circle cx="7.8" cy="7.8" r="1.2" />
+      </symbol>
+      <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M10 13.5a3.6 3.6 0 0 0 5.1 0l2.6-2.6a3.6 3.6 0 0 0-5.1-5.1L11.4 7" /><path d="M14 10.5a3.6 3.6 0 0 0-5.1 0l-2.6 2.6a3.6 3.6 0 0 0 5.1 5.1L12.6 17" />
+      </symbol>
+    </svg>
+
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">LM</div>
+          <div>
+            <h1>光速镜像</h1>
+            <p>GitHub 下载器 · 桌面版</p>
+          </div>
+        </div>
+        <nav class="nav" id="nav"></nav>
+        <div class="side-foot">
+          <div class="side-card">
+            <div class="k" id="sideK">当前没有任务</div>
+            <div class="v" id="sideV">空闲</div>
+          </div>
+          <div class="side-ver" id="sideVer">v3.0.0</div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="page on" data-page="home">
+          <div class="head">
+            <div>
+              <h2>镜像下载台</h2>
+              <p class="sub" id="homeSub">多任务并发 · 自动择优链路</p>
+            </div>
+            <div class="head-right">
+              <span class="pill" id="homeStat">10 个镜像 · 6 并发</span>
+              <button class="btn ghost sm" id="btnOpenRoot">
+                <svg><use href="#i-folder" /></svg>下载目录
+              </button>
+            </div>
+          </div>
+          <div class="body">
+            <div class="input-card">
+              <div class="input-row">
+                <input class="input-field" id="urlInput" spellcheck="false" placeholder="贴上 GitHub 链接 / owner/repo，或者任意直链…" />
+                <button class="icon-btn" id="btnPaste" title="粘贴">
+                  <svg width="18" height="18"><use href="#i-paste" /></svg>
+                </button>
+              </div>
+              <div class="parsed" id="parsed">
+                <span class="chip static">等待链接</span>
+                <span>粘贴后自动解析</span>
+              </div>
+              <div class="actions">
+                <button class="btn primary lg" id="btnStart">测速并下载</button>
+                <button class="btn ghost lg" id="btnTestOnly">只测速</button>
+              </div>
+              <div class="hint-line">
+                <span id="cfgHint"></span>
+                <span id="lastRepoHint"></span>
+              </div>
+            </div>
+
+            <div class="cols">
+              <div class="col-tasks">
+                <div class="sec">
+                  <h3>下载任务</h3>
+                  <div class="sec-right">
+                    <span id="taskCount">0 个</span>
+                    <button class="btn sm plain" id="btnClearDone">清除已完成</button>
+                    <button class="btn sm plain danger" id="btnCancelAll">全部取消</button>
+                  </div>
+                </div>
+                <div id="taskList"></div>
+              </div>
+              <div class="col-mirrors">
+                <div class="sec">
+                  <h3>镜像测速</h3>
+                  <div class="sec-right">
+                    <span id="mirrorHint">逐个探测</span>
+                    <button class="btn sm" id="btnRetest">重新测速</button>
+                  </div>
+                </div>
+                <div class="mirror-mini" id="mirrorList"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" data-page="watch">
+          <div class="head">
+            <div>
+              <h2>版本追踪</h2>
+              <p class="sub">盯住最新 release · 只列你认的格式</p>
+            </div>
+            <div class="head-right">
+              <button class="btn ghost sm" id="btnCheckAll">
+                <svg><use href="#i-refresh" /></svg>检查更新
+              </button>
+            </div>
+          </div>
+          <div class="body">
+            <div class="input-card">
+              <div class="input-row">
+                <input class="input-field" id="repoInput" spellcheck="false" placeholder="owner/repo 或 https://github.com/owner/repo" />
+                <button class="btn primary" id="btnTrack">+ 追踪</button>
+              </div>
+              <div class="fmt-hint" id="fmtHint"></div>
+            </div>
+
+            <div class="sec">
+              <h3>追踪列表</h3>
+              <div class="sortbar">
+                <span id="watchCount">0 个项目</span>
+                <span style="margin: 0 4px">排序</span>
+                <button class="chip" data-sort="updated">最近更新</button>
+                <button class="chip" data-sort="note">备注名</button>
+                <button class="chip" data-sort="name">项目名</button>
+              </div>
+            </div>
+            <div id="watchList"></div>
+          </div>
+        </section>
+
+        <section class="page" data-page="history">
+          <div class="head">
+            <div>
+              <h2>下载记录</h2>
+              <p class="sub" id="histSub">只存本机</p>
+            </div>
+            <div class="head-right">
+              <button class="btn ghost sm" id="btnPickHist">选择</button>
+              <button class="btn ghost sm danger" id="btnClearHist">清空</button>
+            </div>
+          </div>
+          <div class="body">
+            <div id="histList"></div>
+            <div class="selbar" id="selBar">
+              <button class="btn sm" id="btnSelAll">全选</button>
+              <div style="flex: 1"></div>
+              <button class="btn sm danger" id="btnDelSel">删除选中 0 条</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" data-page="mirrors">
+          <div class="head">
+            <div>
+              <h2>镜像源</h2>
+              <p class="sub">顺序 = 测速顺延顺序，同分时靠前优先</p>
+            </div>
+            <div class="head-right">
+              <button class="btn ghost sm" id="btnLog">测速日志</button>
+            </div>
+          </div>
+          <div class="body">
+            <div class="notice" id="mirrorNotice"></div>
+            <div class="sec">
+              <h3>候选列表</h3>
+              <button class="btn sm" id="btnRestoreMirror">恢复内置</button>
+            </div>
+            <div class="mlist" id="mirrorManage"></div>
+            <div class="sec"><h3>添加自定义镜像</h3></div>
+            <div class="addbox">
+              <input class="input-field" id="newMirrorName" placeholder="名字，例如 gh.example.com" />
+              <input class="input-field" id="newMirrorBase" placeholder="https://gh.example.com/" />
+              <select id="newMirrorMode">
+                <option value="prefix">拼完整链接</option>
+                <option value="path">拼 GitHub 路径</option>
+              </select>
+              <button class="btn primary" id="btnAddMirror">添加</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" data-page="settings">
+          <div class="head">
+            <div>
+              <h2>设置</h2>
+              <p class="sub">下载、测速与版本页策略</p>
+            </div>
+          </div>
+          <div class="body" id="settingsBody"></div>
+        </section>
+      </main>
+
+      <nav class="tabbar" id="tabbar"></nav>
+    </div>
+
+    <div class="toast-wrap" id="toasts"></div>
+    <div id="modalRoot"></div>
+
+    <script>
+      /* 脚本一旦出错就摆在界面上，别让用户对着一片空白猜 */
+      window.addEventListener("error", function (e) {
+        try {
+          var d = document.createElement("div");
+          d.style.cssText =
+            "position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:999;" +
+            "background:#2a1416;border:1px solid rgba(255,92,92,.55);color:#ffd7d7;" +
+            "font:12px/1.6 sans-serif;padding:10px 14px;border-radius:10px;max-width:90vw;white-space:pre-wrap";
+          d.textContent =
+            "脚本错误：" + (e.message || e.error) +
+            " @" + String(e.filename || "").split("/").pop() + ":" + e.lineno;
+          if (document.body) document.body.appendChild(d);
+        } catch (_) {}
+      });
+    </script>
+    <script src="mock.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

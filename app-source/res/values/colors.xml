@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#FF0B0F14</color>
+    <color name="surface">#FF141B24</color>
+    <color name="surface2">#FF1B242F</color>
+    <color name="line">#14FFFFFF</color>
+    <color name="lineStrong">#24FFFFFF</color>
+    <color name="text">#FFE8EEF6</color>
+    <color name="text2">#FF8B9AAC</color>
+    <color name="text3">#FF5C6B7C</color>
+    <color name="primary">#FF2BE3A7</color>
+    <color name="primarySoft">#1A2BE3A7</color>
+    <color name="primaryLine">#522BE3A7</color>
+    <color name="accent">#FF4F8CFF</color>
+    <color name="accentSoft">#244F8CFF</color>
+    <color name="warn">#FFFFB020</color>
+    <color name="danger">#FFFF5C5C</color>
+    <color name="dangerSoft">#1AFF5C5C</color>
+    <color name="onPrimary">#FF04140F</color>
+</resources>
