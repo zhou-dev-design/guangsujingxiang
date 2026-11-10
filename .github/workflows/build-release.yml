@@ -22,18 +22,35 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: 装 Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: 装 platform 与 build-tools
+      # runner 自带 Android SDK，不再用 setup-android 动作（会和预装 SDK 冲突）
+      - name: 准备 Android SDK
         shell: bash
         run: |
-          set -o pipefail
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          # 优先 36，装不上就退回 35；脚本自己会挑已装的最高版本
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" \
-            || sdkmanager "platforms;android-35" "build-tools;35.0.0"
-          ls "$ANDROID_HOME/build-tools" "$ANDROID_HOME/platforms"
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          if [ ! -d "$SDK" ]; then
+            echo "runner 上没有 SDK，现场装一份 cmdline-tools" >&2
+            mkdir -p "$HOME/android-sdk/cmdline-tools"
+            curl -sSL -o /tmp/clt.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/clt.zip -d "$HOME/android-sdk/cmdline-tools"
+            mv "$HOME/android-sdk/cmdline-tools/cmdline-tools" "$HOME/android-sdk/cmdline-tools/latest"
+            SDK="$HOME/android-sdk"
+          fi
+          echo "SDK=$SDK"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+
+          SM="$(find "$SDK" -type f -name sdkmanager 2>/dev/null | head -1 || true)"
+          if [ -n "$SM" ]; then
+            chmod +x "$SM" || true
+            yes | "$SM" --sdk_root="$SDK" --licenses >/dev/null 2>&1 || true
+            # 优先 36，装不上就退回 35；构建脚本自己挑已装的最高版本
+            "$SM" --sdk_root="$SDK" "platforms;android-36" "build-tools;36.0.0" \
+              || "$SM" --sdk_root="$SDK" "platforms;android-35" "build-tools;35.0.0" \
+              || true
+          fi
+          echo "--- build-tools ---"; ls "$SDK/build-tools" 2>/dev/null || true
+          echo "--- platforms ---";   ls "$SDK/platforms" 2>/dev/null || true
 
       - name: 构建 APK
         shell: bash
