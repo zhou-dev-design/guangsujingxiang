@@ -145,6 +145,35 @@ select:focus{border-color:var(--brand2)}
 .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);
   border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px}
 @keyframes sp{to{transform:rotate(360deg)}}
+body.eink{background:#fff;color:#000;font-size:15px}
+body.eink *{box-shadow:none!important;text-shadow:none!important;
+  transition:none!important;animation:none!important;backdrop-filter:none!important}
+body.eink .card,body.eink .item,body.eink .witem,body.eink .list,body.eink textarea,
+body.eink input[type=text],body.eink input[type=number],body.eink select{background:#fff!important}
+body.eink .card,body.eink .list,body.eink .item,body.eink .witem,
+body.eink textarea,body.eink input[type=text]{border-color:#000!important}
+body.eink .logo{background:#000!important}
+body.eink button.primary{background:#000!important;color:#fff!important;border:1px solid #000!important}
+body.eink button.primary:hover{filter:none!important}
+body.eink button{background:#fff;color:#000;border:1px solid #000}
+body.eink .dot{background:#000}
+body.eink .dot.run{background:#000}
+body.eink .bar{background:#fff;border:1px solid #000}
+body.eink .fill{background:#000!important}
+body.eink .wbadge,body.eink .item .st{background:#fff!important;color:#000!important;border:1px solid #000}
+body.eink .hint,body.eink .sub,body.eink .wsub,body.eink .count,body.eink .p-top{color:#222!important}
+body.eink .dock{background:#fff!important;border-top:1px solid #000}
+body.eink .item:hover,body.eink .witem:hover{background:#fff!important}
+body.eink .cover,body.eink .wcover{background:#fff!important;border:1px solid #000}
+body.eink h2 .n{background:#fff!important;color:#000!important;border:1px solid #000;border-radius:4px}
+body.eink .result{background:#fff!important;border-color:#000!important}
+body.eink .result .ic{background:#fff;border:1px solid #000}
+body.eink .spin{border-color:#000;border-top-color:#888}
+body.eink .item{font-size:14px}
+body.eink .logbox div{color:#000}
+body.eink .logbox{border-top:1px dashed #000}
+body.eink header{border-bottom:1px solid #000;padding-bottom:14px}
+body.eink .badge{background:#fff!important;border:1px solid #000;color:#000}
 @media (max-width:720px){
   .wrap{padding:0 14px 170px}
   .sub{display:none}
@@ -169,6 +198,8 @@ select:focus{border-color:var(--brand2)}
       <h1>公众号合集 → EPUB</h1>
       <div class="sub">把公众号「合集/连载」里的文章整本抓下来，合成带封面和目录的电子书</div>
     </div>
+    <button class="ghost" id="btnEink" style="display:none;margin-left:auto;margin-right:10px"
+      title="切换墨水屏模式">墨</button>
     <div class="badge"><span class="dot" id="dot"></span><span id="phaseText">准备就绪</span></div>
   </header>
 
@@ -560,7 +591,28 @@ $('#btnLog').onclick = () => {
 $('#input').addEventListener('keydown', e => {
   if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#btnParse').click();
 });
+function applyEink(on){
+  document.body.classList.toggle('eink', !!on);
+  const b = $('#btnEink');
+  if(b){ b.textContent = on ? '墨·开' : '墨'; b.style.color = on ? '#000' : ''; }
+}
+
 if(IS_ANDROID){
+  const eb = $('#btnEink');
+  if(eb){
+    eb.style.display = '';
+    let on = false;
+    try{
+      const saved = localStorage.getItem('eink');
+      on = (saved === null) ? (Android.isEink && Android.isEink()) : (saved === '1');
+    }catch(e){}
+    applyEink(on);
+    eb.onclick = () => {
+      const now = !document.body.classList.contains('eink');
+      applyEink(now);
+      try{ Android.setEink(now); localStorage.setItem('eink', now ? '1' : '0'); }catch(e){}
+    };
+  }
   $('#btnOpen').textContent = '保存到手机';
   $('#btnDownload').textContent = '保存位置';
   try{

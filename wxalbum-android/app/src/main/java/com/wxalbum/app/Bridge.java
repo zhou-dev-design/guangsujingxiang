@@ -41,7 +41,22 @@ public class Bridge {
     }
 
     @JavascriptInterface
+    public boolean isEink() {
+        return act.isEink();
+    }
+
+    @JavascriptInterface
+    public void setEink(final boolean on) {
+        act.setEink(on);
+    }
+
+    @JavascriptInterface
     public void toast(final String msg) {
         act.toast(msg);
+    }
+
+    @JavascriptInterface
+    public String version() {
+        return "1.1";
     }
 }
