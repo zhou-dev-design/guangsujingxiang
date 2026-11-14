@@ -19,12 +19,13 @@ android {
     }
 
     signingConfigs {
-        // 固定签名：CI 上每次用同一把钥匙，才能覆盖升级
+        // 固定签名：证书由 CI 从 GitHub Secret(KEYSTORE_BASE64) 还原到 keystore/wxalbum.p12
+        // 密码可用 Secret KEYSTORE_PASSWORD 覆盖，缺省值仅用于本地构建
         release {
             storeFile file("../keystore/wxalbum.p12")
-            storePassword "wxalbum2026"
+            storePassword System.getenv("WXALBUM_KEYSTORE_PASSWORD") ?: "wxalbum2026"
             keyAlias "wxalbum"
-            keyPassword "wxalbum2026"
+            keyPassword System.getenv("WXALBUM_KEYSTORE_PASSWORD") ?: "wxalbum2026"
             storeType "PKCS12"
         }
     }
