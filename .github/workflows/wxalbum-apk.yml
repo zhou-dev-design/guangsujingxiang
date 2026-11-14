@@ -1,0 +1,71 @@
+name: 构建公众号转EPUB APK
+
+on:
+  push:
+    paths:
+      - "wxalbum-android/**"
+      - ".github/workflows/wxalbum-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 打包 APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: 准备 Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "SDK=$SDK"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          SM="$(find "$SDK" -type f -name sdkmanager 2>/dev/null | head -1 || true)"
+          if [ -n "$SM" ]; then
+            chmod +x "$SM" || true
+            yes | "$SM" --sdk_root="$SDK" --licenses >/dev/null 2>&1 || true
+            "$SM" --sdk_root="$SDK" "platforms;android-34" "build-tools;34.0.0" || true
+          fi
+
+      - name: 安装 Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: "8.7"
+
+      - name: 构建 debug APK
+        working-directory: wxalbum-android
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: 收集产物
+        run: |
+          mkdir -p dist
+          find wxalbum-android/app/build/outputs/apk -name "*.apk" -exec cp {} dist/ \;
+          ls -lh dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wxalbum-apk
+          path: dist/*.apk
+
+      - name: 发布到 Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: wxalbum-apk-latest
+          name: 公众号转EPUB APK（最新构建）
+          body: |
+            由 GitHub Actions 自动构建，安装前请允许「未知来源」。
+            界面与电脑版一致；结果页可「保存到手机」，也可在设置里选择保存目录。
+          files: dist/*.apk
+          make_latest: false
