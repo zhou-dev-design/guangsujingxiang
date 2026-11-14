@@ -47,6 +47,25 @@ jobs:
         working-directory: wxalbum-android
         run: gradle assembleDebug --no-daemon --stacktrace
 
+      - name: 校验签名
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find wxalbum-android/app/build/outputs/apk -name "*.apk" | head -1)
+          echo "APK: $APK"
+          BT="$(ls -d ${ANDROID_HOME}/build-tools/* 2>/dev/null | sort -V | tail -1)"
+          if [ -x "$BT/apksigner" ]; then
+            "$BT/apksigner" verify --print-certs "$APK" | tee /tmp/certs.txt
+            {
+              echo "### APK 签名"
+              echo '```'
+              cat /tmp/certs.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "apksigner 未找到，跳过"
+          fi
+
       - name: 收集产物
         run: |
           mkdir -p dist
