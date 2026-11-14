@@ -368,11 +368,28 @@ public class MainActivity extends Activity {
                 getContentResolver().takePersistableUriPermission(tree,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                 prefs.edit().putString("tree", tree.toString()).apply();
-                toast("保存位置已更新：" + saveDirLabel());
+                String label = saveDirLabel();
+                toast("保存位置已更新：" + label);
+                notifyDirChanged(label);
             } catch (Exception e) {
                 toast("授权失败：" + e.getMessage());
             }
         }
+    }
+
+    private void notifyDirChanged(String name) {
+        if (web == null) return;
+        String safe = name == null ? "" : name.replace("\\", "\\\\").replace("'", "\\'");
+        final String js = "window.__onDirChanged && window.__onDirChanged('" + safe + "')";
+        web.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    web.evaluateJavascript(js, null);
+                } catch (Throwable ignored) {
+                }
+            }
+        });
     }
 
     void exportEpub(String pyPath) {

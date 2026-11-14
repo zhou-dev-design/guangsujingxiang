@@ -97,6 +97,16 @@ select:focus{border-color:var(--brand2)}
 .item .flag{font-size:10.5px;color:#0d6d66;background:#d9f2ea;border-radius:5px;padding:1px 6px;
   margin-right:6px;flex:none;letter-spacing:.5px}
 
+.setrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #eef2f1}
+.setrow:last-child{border-bottom:none;padding-bottom:0}
+.settext{flex:1;min-width:0}
+.setk{font-size:13px;font-weight:500}
+.setv{font-size:11.5px;color:var(--sub);margin-top:3px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.setrow select{width:78px}
+body.eink .setrow{border-bottom:1px solid #000}
+body.eink .setv{color:#222!important}
+.empty{font-size:12.5px;color:var(--sub);text-align:center;padding:16px 10px;line-height:1.7}
 .wlist{display:flex;flex-direction:column;gap:8px}
 .witem{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--line);
   border-radius:11px;background:#fbfcfc;transition:.15s}
@@ -202,6 +212,29 @@ body.eink .badge{background:#fff!important;border:1px solid #000;color:#000}
       title="切换墨水屏模式">墨</button>
     <div class="badge"><span class="dot" id="dot"></span><span id="phaseText">准备就绪</span></div>
   </header>
+
+  <section class="card" id="settingsCard">
+    <h2><span class="n">⚙</span>设置</h2>
+    <div class="setrow" id="rowSaveDir" style="display:none">
+      <div class="settext">
+        <div class="setk">保存位置</div>
+        <div class="setv" id="setDir">下载/公众号EPUB</div>
+      </div>
+      <button class="sm" id="btnChangeDir">更改</button>
+    </div>
+    <div class="setrow">
+      <div class="settext">
+        <div class="setk">下载线程</div>
+        <div class="setv">同时抓几章：1 最稳，10 最快（过高可能被限流）</div>
+      </div>
+      <select id="optConc">
+        <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
+        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+        <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+  </section>
 
   <!-- 0 连载追踪 -->
   <section class="card hidden" id="watchCard">
@@ -311,6 +344,7 @@ body.eink .badge{background:#fff!important;border:1px solid #000;color:#000}
 const $ = s => document.querySelector(s);
 const IS_ANDROID = /[?&]android=1/.test(location.search);
 let S = null, rows = new Map(), rowsSig = '', logShown = 0, lastResult = null, watchSig = '';
+let pendingSave = false;
 
 const PHASE = {
   idle:      ['准备就绪', ''],
@@ -380,6 +414,14 @@ function render(){
       ? p.current
       : (S.phase === 'done' ? (S.result ? S.result.name : '完成') : (S.message || '等待开始'));
 
+  if(IS_ANDROID && pendingSave){
+    if(S.phase === 'done' && S.result && S.result.path){
+      pendingSave = false;
+      try{ Android.saveEpub(S.result.path); }catch(e){}
+    } else if(S.phase === 'error' || S.phase === 'cancelled'){
+      pendingSave = false;
+    }
+  }
   renderWatch();
   renderLog();
   renderResult();
@@ -388,7 +430,22 @@ function render(){
 function renderWatch(){
   const w = (S && S.watch) || {items: []};
   const card = $('#watchCard');
-  if(!w.items || !w.items.length){ card.classList.add('hidden'); return; }
+  if(!w.items || !w.items.length){
+    if(IS_ANDROID){
+      card.classList.remove('hidden');
+      $('#watchCount').textContent = '';
+      $('#watchHint').textContent = '尚未检查';
+      $('#btnCheckAll').disabled = true;
+      if(watchSig !== 'empty'){
+        watchSig = 'empty';
+        $('#watchList').innerHTML =
+          '<div class="empty">还没有生成过书<br/>生成后会自动出现在这里，可以随时检查更新并下载新版</div>';
+      }
+    } else {
+      card.classList.add('hidden');
+    }
+    return;
+  }
   card.classList.remove('hidden');
   $('#watchCount').textContent = '· ' + w.items.length + ' 本';
   $('#watchHint').textContent = w.checking ? '正在检查…'
@@ -541,6 +598,7 @@ $('#btnBuild').onclick = async () => {
       images: $('#optImg').checked,
       numbering: $('#optNum').checked,
       cache: $('#optCache').checked,
+      concurrency: parseInt($('#optConc').value) || 1,
       titlemode: $('#optTitle').value,
       delay: parseFloat($('#optDelay').value) || 0
     }
@@ -577,7 +635,12 @@ $('#watchList').addEventListener('click', e => {
   const btn = e.target.closest('[data-act]');
   if(!btn) return;
   const id = btn.closest('.witem').dataset.id;
-  if(btn.dataset.act === 'update'){ post('/api/watch/update', {album_id: id}); }
+  if(btn.dataset.act === 'update'){
+    pendingSave = true;
+    btn.disabled = true;
+    btn.textContent = '更新中…';
+    post('/api/watch/update', {album_id: id});
+  }
   else if(btn.dataset.act === 'remove'){
     if(confirm('从追踪列表移除？不会删除已生成的 EPUB。')) post('/api/watch/remove', {album_id: id});
   }
@@ -598,6 +661,13 @@ function applyEink(on){
 }
 
 if(IS_ANDROID){
+  $('#rowSaveDir').style.display = '';
+  try{ $('#setDir').textContent = Android.saveDir(); }catch(e){}
+  $('#btnChangeDir').onclick = () => { try{ Android.chooseDir(); }catch(e){} };
+  window.__onDirChanged = function(name){
+    const p = $('#setDir');
+    if(p && name) p.textContent = name;
+  };
   const eb = $('#btnEink');
   if(eb){
     eb.style.display = '';
@@ -615,15 +685,12 @@ if(IS_ANDROID){
   }
   $('#btnOpen').textContent = '保存到手机';
   $('#btnDownload').textContent = '保存位置';
-  try{
-    const dir = Android.saveDir();
-    const el = document.createElement('div');
-    el.className = 'hint';
-    el.style.marginTop = '10px';
-    el.textContent = '当前保存位置：' + dir + '（可点「保存位置」更改）';
-    $('#resultCard').after(el);
-  }catch(e){}
 }
+try{
+  const c = localStorage.getItem('conc');
+  if(c) $('#optConc').value = c;
+  $('#optConc').onchange = () => localStorage.setItem('conc', $('#optConc').value);
+}catch(e){}
 setInterval(tick, 700);
 tick();
 </script>

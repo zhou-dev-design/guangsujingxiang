@@ -15,6 +15,7 @@
 
 import sys, os, re, io, json, ssl, gzip, time, shutil, html as H, zipfile, uuid, random
 import socket, threading, hashlib, datetime, traceback, webbrowser, argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import urllib.request, urllib.parse, urllib.error, http.cookiejar
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -1310,6 +1311,7 @@ def do_update_watch(album_id):
         "images": bool(item.get("images")),
         "numbering": opt.get("numbering", True),
         "titlemode": opt.get("titlemode", "auto"),
+        "concurrency": int(opt.get("concurrency") or 1),
         "cache": True,
         "title": item.get("book_title") or "",
         "author": item.get("author") or "",
@@ -1441,40 +1443,44 @@ def do_build(selected_keys, opts):
     if not arts:
         set_phase("error", "没有选中任何文章")
         return
-    set_phase("fetching", "开始抓取正文…")
+
+    total = len(arts)
+    concurrency = int(opts.get("concurrency") or 1)
+    concurrency = max(1, min(10, concurrency))
+    if concurrency > 1:
+        set_phase("fetching", f"开始抓取正文（{concurrency} 线程并发）…")
+    else:
+        set_phase("fetching", "开始抓取正文…")
+
     f = Fetcher()
     cache_root = CACHE_DIR / str(album.get("album_id") or "single")
-    chapters, failures = [], []
     delay = max(0.0, float(opts.get("delay", 0.8)))
     use_cache = bool(opts.get("cache", True))
+    titlemode = opts.get("titlemode", "auto")
 
-    for i, art in enumerate(arts, 1):
-        if CTRL["cancel"]:
-            log("warn", "已取消")
-            set_phase("cancelled", f"已取消（完成 {len(chapters)} 篇）")
+    got = [None] * total        # 每篇抓取结果，按原顺序
+    errs = [None] * total
+    stop = threading.Event()
+    stat = {"ok": 0, "fail": 0}
+
+    def work(idx, art):
+        if stop.is_set() or CTRL["cancel"]:
             return
+        i = idx + 1
         with LOCK:
             for a in STATE["articles"]:
                 if a["key"] == art["key"]:
                     a["status"] = "fetching"
             STATE["progress"]["current"] = art["title"]
             STATE["rev"] += 1
-        log("info", f"[{i}/{len(arts)}] {art['title']}")
         cache_path = cache_root / f'{art["msgid"]}_{art["itemidx"]}.json'
         try:
             obj, from_cache = fetch_article(f, art, cache_path, use_cache, log)
             blocks = list(obj["blocks"])
-            no = len(chapters) + 1
-            ttl, drop = pick_title(obj.get("title") or art["title"], blocks,
-                                   opts.get("titlemode", "auto"))
-            if drop is not None:                      # 首行已用作标题，正文里去掉，避免重复
-                blocks = [b for i, b in enumerate(blocks) if i != drop]
-            if (opts.get("numbering", True) and not CHAP_ANY_RE.search(ttl)
-                    and not re.match(r"^\d+[\.、．]", ttl)):
-                ttl = f"{no:0{max(2, len(str(len(arts))))}d}. {ttl}"
-            chapters.append({"title": ttl, "raw": clean(obj.get("title") or art["title"]),
-                             "blocks": blocks, "no": no,
-                             "account": obj.get("account"), "publish": obj.get("publish")})
+            raw = clean(obj.get("title") or art["title"])
+            got[idx] = {"blocks": blocks, "raw": raw,
+                        "account": obj.get("account"), "publish": obj.get("publish"),
+                        "art": art, "from_cache": from_cache}
             chars = article_chars(blocks)
             with LOCK:
                 for a in STATE["articles"]:
@@ -1484,9 +1490,11 @@ def do_build(selected_keys, opts):
                 STATE["progress"]["ok"] += 1
                 STATE["progress"]["chars"] += chars
                 STATE["rev"] += 1
-            log("ok", f"    ✓ {chars} 字{'（缓存）' if from_cache else ''}")
+                stat["ok"] += 1
+            log("ok", f"  [{i}/{total}] ✓ {chars} 字{'' if from_cache else ''}"
+                      f"{'（缓存）' if from_cache else ''} {raw[:22]}")
         except Exception as e:
-            failures.append((art["title"], str(e)))
+            errs[idx] = (art["title"], str(e))
             with LOCK:
                 for a in STATE["articles"]:
                     if a["key"] == art["key"]:
@@ -1494,16 +1502,65 @@ def do_build(selected_keys, opts):
                         a["error"] = str(e)
                 STATE["progress"]["fail"] += 1
                 STATE["rev"] += 1
-            log("err", f"    ✗ {e}")
-            if len(failures) >= 5 and len(failures) >= len(chapters):
-                log("err", "连续失败过多，可能触发了频率限制，任务中止。已抓取的会缓存，加大间隔后重试即可。")
-                set_phase("error", "连续失败过多，可能被限流；请把间隔调大（如 2 秒）后重试")
-                return
-        with LOCK:
-            STATE["progress"]["done"] = i
-            STATE["rev"] += 1
-        if i < len(arts):
-            time.sleep(delay * (0.7 + random.random() * 0.7))
+                stat["fail"] += 1
+                fail_now, ok_now = stat["fail"], stat["ok"]
+            log("err", f"  [{i}/{total}] ✗ {e}")
+            if fail_now >= 5 and ok_now == 0:
+                stop.set()
+        finally:
+            with LOCK:
+                STATE["progress"]["done"] += 1
+                STATE["rev"] += 1
+        if delay > 0:
+            if concurrency == 1:
+                time.sleep(delay * (0.7 + random.random() * 0.7))
+            else:
+                time.sleep(random.random() * delay)
+
+    try:
+        if concurrency == 1:
+            for idx, art in enumerate(arts):
+                if CTRL["cancel"] or stop.is_set():
+                    break
+                work(idx, art)
+        else:
+            with ThreadPoolExecutor(max_workers=concurrency) as ex:
+                futures = [ex.submit(work, i, a) for i, a in enumerate(arts)]
+                for fut in as_completed(futures):
+                    if CTRL["cancel"] or stop.is_set():
+                        break
+                    fut.exception()
+    except Exception as e:
+        log("err", f"抓取线程异常：{e}")
+
+    if CTRL["cancel"]:
+        log("warn", "已取消")
+        set_phase("cancelled", f"已取消（完成 {stat['ok']} 篇）")
+        return
+    if stop.is_set():
+        log("err", "连续失败过多，可能触发了频率限制，任务中止。已抓取的会缓存，加大间隔后重试即可。")
+        set_phase("error", "连续失败过多，可能被限流；请把线程数调回 1、间隔调大后重试")
+        return
+
+    # 按原顺序组装章节（编号连续，跳过的失败篇不留空号）
+    chapters, failures = [], []
+    for idx in range(total):
+        art = arts[idx]
+        r = got[idx]
+        if r is None:
+            if errs[idx]:
+                failures.append(errs[idx])
+            continue
+        blocks = r["blocks"]
+        no = len(chapters) + 1
+        ttl, drop = pick_title(r["raw"], blocks, titlemode)
+        if drop is not None:
+            blocks = [b for i, b in enumerate(blocks) if i != drop]
+        if (opts.get("numbering", True) and not CHAP_ANY_RE.search(ttl)
+                and not re.match(r"^\d+[\.、．]", ttl)):
+            ttl = f"{no:0{max(2, len(str(total)))}d}. {ttl}"
+        chapters.append({"title": ttl, "raw": r["raw"], "blocks": blocks, "no": no,
+                         "account": r.get("account"), "publish": r.get("publish")})
 
     if not chapters:
         set_phase("error", "一篇都没抓到，请检查网络或稍后重试")
@@ -1536,7 +1593,8 @@ def do_build(selected_keys, opts):
                     "epub": result["path"],
                     "images": bool(opts.get("images")),
                     "opts": {"numbering": opts.get("numbering", True),
-                             "titlemode": opts.get("titlemode", "auto")},
+                             "titlemode": opts.get("titlemode", "auto"),
+                             "concurrency": concurrency},
                     "last_build": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                 })
                 WSTATE["results"].pop(str(album.get("album_id")), None)
