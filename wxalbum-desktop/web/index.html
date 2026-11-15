@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>公众号转 EPUB · 控制台</title>
-<link rel="stylesheet" href="/app.css"/>
+<link rel="stylesheet" href="/app.css?v=2"/>
 </head>
 <body>
 <div class="app">
@@ -82,14 +82,20 @@
             <label class="chk"><input type="checkbox" id="optBookinfo" checked/>书籍信息页</label>
             <label class="chk"><input type="checkbox" id="optNumbering" checked/>标题加序号</label>
             <label class="chk"><input type="checkbox" id="optCache" checked/>使用缓存</label>
-            <label class="chk">间隔 <input type="number" id="optDelay" value="0.5" min="0" max="10" step="0.1"/> 秒</label>
+          </div>
+          <div class="opts params">
+            <label class="chk">间隔
+              <input type="number" id="optDelay" value="0.5" min="0" max="10" step="0.1"/>
+              <span class="unit">秒</span>
+            </label>
             <label class="chk">标题
-              <select id="optTitle" style="height:30px;border-radius:9px;font-size:12px">
+              <select id="optTitle">
                 <option value="auto">自动识别</option>
                 <option value="first">正文第一行</option>
                 <option value="article">文章标题</option>
               </select>
             </label>
+            <span class="hint" id="delayHint">每篇之间等待，0 表示不等待</span>
           </div>
         </div>
 
@@ -264,6 +270,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="/app.js"></script>
+<script src="/app.js?v=2"></script>
 </body>
 </html>

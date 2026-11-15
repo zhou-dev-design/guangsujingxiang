@@ -72,6 +72,10 @@ const SUBTITLE = {
 };
 function setTab(name) {
   tab = name;
+  try {
+    localStorage.setItem('tab', name);
+    if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+  } catch (e) {}
   $$('.nav').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
   $$('.view').forEach(v => v.classList.toggle('on', v.id === 'view-' + name));
   $('#pageTitle').textContent = { download: '下载', shelf: '书架', history: '历史', settings: '设置' }[name];
@@ -101,9 +105,11 @@ function loadPrefs() {
   } catch (e) {}
   $('#optImages').checked = img;
   $('#optBookinfo').checked = info;
-  $('#optDelay').value = delay;
+  const dl = parseFloat(delay);
+  $('#optDelay').value = isFinite(dl) && dl >= 0 && dl <= 10 ? String(dl) : '0.5';
   $('#setImages').checked = img;
   $('#setBookinfo').checked = info;
+  syncDelayHint();
 }
 $('#optImages').onchange = () => {
   try { localStorage.setItem('defImages', $('#optImages').checked ? '1' : '0'); } catch (e) {}
@@ -111,7 +117,25 @@ $('#optImages').onchange = () => {
 $('#optBookinfo').onchange = () => {
   try { localStorage.setItem('defBookinfo', $('#optBookinfo').checked ? '1' : '0'); } catch (e) {}
 };
+function syncDelayHint() {
+  const el = $('#delayHint');
+  const v = $('#optDelay');
+  if (!el || !v) return;
+  const n = parseFloat(v.value);
+  if (!isFinite(n)) { v.value = '0'; }
+  else if (n < 0) { v.value = '0'; }
+  else if (n > 10) { v.value = '10'; }
+  el.textContent = (!isFinite(parseFloat(v.value)) || parseFloat(v.value) === 0)
+    ? '不等待，抓得快但更容易被限流'
+    : '每篇之间等待，0 表示不等待';
+}
 $('#optDelay').onchange = () => {
+  syncDelayHint();
+  try { localStorage.setItem('defDelay', $('#optDelay').value); } catch (e) {}
+};
+$('#optDelay').onblur = () => {
+  if (!$('#optDelay').value.trim()) $('#optDelay').value = '0.5';
+  syncDelayHint();
   try { localStorage.setItem('defDelay', $('#optDelay').value); } catch (e) {}
 };
 
@@ -291,7 +315,7 @@ $('#btnBuild').onclick = async () => {
     bookinfo: $('#optBookinfo').checked,
     numbering: $('#optNumbering').checked,
     cache: $('#optCache').checked,
-    delay: parseFloat($('#optDelay').value) || 0,
+    delay: Math.max(0, Math.min(10, parseFloat($('#optDelay').value) || 0)),
     titlemode: $('#optTitle').value,
     concurrency: (cfg && cfg.concurrency) || 0
   };
@@ -579,7 +603,9 @@ $('#btnQuit').onclick = () => {
   applyTheme(t);
   loadPrefs();
   loadConfig();
-  setTab('download');
+  const hash = (location.hash || '').replace('#', '');
+  const saved = hash || (localStorage.getItem('tab') || 'download');
+  setTab(['download', 'shelf', 'history', 'settings'].includes(saved) ? saved : 'download');
   tick();
   setInterval(tick, 700);
 })();
