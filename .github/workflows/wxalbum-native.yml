@@ -116,7 +116,7 @@ jobs:
           path: dist/*.apk
 
       - name: 发布到 Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/wxalbum'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: wxalbum-native-latest

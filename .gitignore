@@ -1,13 +1,17 @@
-# 构建中间产物（成品在 release/，需要提交）
-rust/src-tauri/target/
-rust/src-tauri/gen/
-rust/node_modules/
-app-source/build/
-desktop/build/
-desktop/dist/
-desktop/*.spec
+# Gradle / Android
+build/
+.gradle/
+local.properties
+*.iml
+.idea/
+*.jks
+*.p12
+
+# Python
 __pycache__/
 *.pyc
+
+# 杂项
 *.log
 .DS_Store
 Thumbs.db
