@@ -61,10 +61,28 @@ jobs:
           gradle-version: "8.7"
 
       - name: 构建 release APK
+        id: build
+        continue-on-error: true
         working-directory: wxalbum-native
         env:
           WXALBUM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: gradle assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+
+      - name: 编译失败时把日志推到 ci-logs 分支
+        if: steps.build.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/build.log build-error.log
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git checkout -B ci-logs
+          git add -f build-error.log
+          git commit -m "ci: 编译错误日志" || true
+          git push -f origin ci-logs
+          exit 1
 
       - name: 校验签名
         shell: bash
