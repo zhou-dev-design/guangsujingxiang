@@ -255,7 +255,22 @@ public final class Engine {
                 Cleaner.dropCrossTitles(chapters);
                 Cleaner.dropTailSignature(chapters, alb.title, o.title);
                 log("开始打包：" + chapters.size() + " 章");
-                EpubBuilder.Result r = EpubBuilder.build(alb, chapters, o.images, o.bookinfo, out, this::log);
+                final boolean replacing = out.exists();
+                final File stage = new File(out.getAbsoluteFile().getParentFile(),
+                        "." + out.getName() + ".part");
+                final EpubBuilder.Result r;
+                try {
+                    // 先写到同目录的临时文件，校验通过才动原文件：
+                    // 生成失败时原文件分毫未损，等于自动"留下旧版本"
+                    r = EpubBuilder.build(alb, chapters, o.images, o.bookinfo, stage, this::log);
+                    SafeWrite.verify(stage, chapters.size());
+                    long oldSize = replacing ? out.length() : 0;
+                    SafeWrite.replace(stage, out);
+                    if (replacing) log("校验通过，已原位替换（" + Model.fmtSize(oldSize)
+                            + " → " + Model.fmtSize(out.length()) + "），旧版本不保留");
+                } finally {
+                    if (stage.exists()) stage.delete();
+                }
                 resultPath = out.getAbsolutePath();
                 resultName = out.getName();
                 resultSize = out.length();
@@ -303,6 +318,13 @@ public final class Engine {
         if (r.isEmpty()) r = "公众号合集";
         if (r.length() > 80) r = r.substring(0, 80);
         return r;
+    }
+
+    /* ==================== 安全替换 ==================== */
+
+    /** 启动时收拾上次被中断的替换：有 .old 但原文件没了就还原，残留 .part 直接删。 */
+    public static int recoverOrphans(Context ctx) {
+        return SafeWrite.recover(Stores.outDir(ctx));
     }
 
     private List<Model.Chapter> fetchAll(Context ctx, Model.Album alb, List<Model.Article> picked, Opts o)
@@ -476,6 +498,9 @@ public final class Engine {
             w.count = chapters.size();
             w.epub = out.getAbsolutePath();
             w.images = o.images;
+            w.bookinfo = o.bookinfo;
+            w.numbering = o.numbering;
+            w.titlemode = o.titlemode;
             w.lastBuild = Stores.now();
             for (Model.Article a : articles) w.keys.add(a.key());
             Stores.upsertWatch(ctx, w);
@@ -543,8 +568,9 @@ public final class Engine {
             }
             Opts o = new Opts();
             o.images = w.images;
-            o.bookinfo = true;
-            o.numbering = true;
+            o.bookinfo = w.bookinfo;
+            o.numbering = w.numbering;
+            o.titlemode = w.titlemode == null || w.titlemode.isEmpty() ? "auto" : w.titlemode;
             o.delayMs = 400;
             o.concurrency = Stores.prefs(ctx).concurrency;
             o.title = w.title;

@@ -135,6 +135,12 @@ public class MainActivity extends Activity {
         setScreen = buildSettings();
 
         Engine.I.loadStores(this);
+        new Thread(() -> {
+            int fixed = Engine.recoverOrphans(this);
+            if (fixed > 0) {
+                ui.post(() -> toast("已还原上次中断留下的旧版本 " + fixed + " 本"));
+            }
+        }, "recover").start();
         switchTab(0);
         refresh();
         ui.postDelayed(ticker, 600);
@@ -911,7 +917,8 @@ public class MainActivity extends Activity {
         up.setOnClickListener(v -> {
             new AlertDialog.Builder(this)
                     .setTitle("更新《" + w.title + "》")
-                    .setMessage("会重新抓取新增章节并覆盖原文件，旧内容走缓存。继续？")
+                    .setMessage("重新抓取新增章节（旧章节走缓存），校验通过后原位替换原文件；\n"
+                            + "生成失败会自动保留旧版本，成功则不保留旧版。继续？")
                     .setNegativeButton("取消", null)
                     .setPositiveButton("更新", (d, x) -> {
                         switchTab(0);

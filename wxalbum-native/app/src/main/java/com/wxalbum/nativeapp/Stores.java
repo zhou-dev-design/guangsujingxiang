@@ -43,6 +43,9 @@ public final class Stores {
         public List<String> keys = new ArrayList<>();
         public String epub = "";
         public boolean images;
+        public boolean bookinfo = true;
+        public boolean numbering = true;
+        public String titlemode = "auto";
         public String lastBuild = "";
         public String lastCheck = "";
         public int newCount = -1;
@@ -169,6 +172,9 @@ public final class Stores {
                 w.count = o.optInt("count");
                 w.epub = o.optString("epub");
                 w.images = o.optBoolean("images");
+                w.bookinfo = o.optBoolean("bookinfo", true);
+                w.numbering = o.optBoolean("numbering", true);
+                w.titlemode = o.optString("titlemode", "auto");
                 w.lastBuild = o.optString("last_build");
                 w.lastCheck = o.optString("last_check");
                 JSONArray ks = o.optJSONArray("keys");
@@ -196,6 +202,9 @@ public final class Stores {
                 o.put("count", w.count);
                 o.put("epub", w.epub);
                 o.put("images", w.images);
+                o.put("bookinfo", w.bookinfo);
+                o.put("numbering", w.numbering);
+                o.put("titlemode", w.titlemode);
                 o.put("last_build", w.lastBuild);
                 o.put("last_check", w.lastCheck);
                 JSONArray ks = new JSONArray();
