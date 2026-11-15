@@ -146,7 +146,10 @@ public class MainActivity extends Activity {
                 ui.post(() -> toast("已还原上次中断留下的旧版本 " + fixed + " 本"));
             }
         }, "recover").start();
-        switchTab(0);
+        // 从系统目录选择器返回时 Activity 可能被重建，恢复到原来的标签页，
+        // 否则会跳回下载页，看起来像「设置界面不显示了」
+        int savedTab = getSharedPreferences("wxalbum", MODE_PRIVATE).getInt("lastTab", 0);
+        switchTab(savedTab >= 0 && savedTab <= 3 ? savedTab : 0);
         refresh();
         ui.postDelayed(ticker, tickMs());
     }
@@ -210,6 +213,7 @@ public class MainActivity extends Activity {
 
     private void switchTab(int idx) {
         tab = idx;
+        getSharedPreferences("wxalbum", MODE_PRIVATE).edit().putInt("lastTab", idx).apply();
         content.removeAllViews();
         View v = idx == 0 ? dlScreen : idx == 1 ? shelfScreen : idx == 2 ? histScreen : setScreen;
         content.addView(v, new FrameLayout.LayoutParams(
