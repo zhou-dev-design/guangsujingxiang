@@ -46,6 +46,9 @@ for d in (WEB_DIR, CACHE_DIR, OUT_DIR):
         pass
 
 
+MAX_CONCURRENCY = 10          # 手机端并发上限（桌面版是 50）
+
+
 def is_android():
     return bool(os.environ.get("WXALBUM_HOME"))
 
@@ -320,9 +323,15 @@ def parse_album_head(html_text):
     if m:
         meta["author"] = clean(H.unescape(re.sub(r"<[^>]+>", "", m.group(1))))
 
-    m = re.search(r'class="[^"]*js_album_desc_content[^"]*"[^>]*>(.*?)</div>\s*</div>\s*</div>', html_text, re.S)
+    m = re.search(r'class="[^"]*js_album_desc_content[^"]*"[^>]*>(.*?)</div>', html_text, re.S)
     if m:
-        meta["desc"] = clean(re.sub(r"<[^>]+>", " ", m.group(1)))[:300]
+        txt = clean(re.sub(r"<[^>]+>", " ", m.group(1)))
+        parts, seen_p = [], set()
+        for seg in [x.strip() for x in re.split(r"[\n\r]+", txt) if x.strip()]:
+            if seg not in seen_p:
+                seen_p.add(seg)
+                parts.append(seg)
+        meta["desc"] = "\n".join(parts)[:600]
 
     m = (re.search(r'id="js_header_novel_cover"[^>]*src="([^"]+)"', html_text)
          or re.search(r'id="js_header_cover"[^>]*src="([^"]+)"', html_text))
@@ -365,8 +374,7 @@ def fetch_album(f, biz, album_id, log):
     if "环境异常" in html_text or "该内容已被发布者删除" in html_text:
         raise RuntimeError("微信返回了验证/异常页面，请稍后重试，或换网络（手机热点）再试")
     meta = parse_album_head(html_text)
-    items = parse_album_items(html_text)
-    log("info", f"首屏取到 {len(items)} 篇，开始翻页…")
+    items = []
 
     def page(begin=None):
         q = {"__biz": biz, "action": "getalbum", "album_id": album_id, "count": "10",
@@ -394,15 +402,18 @@ def fetch_album(f, biz, album_id, log):
             })
         return new
 
-    seen = {(i["msgid"], i["itemidx"]) for i in items}
-    # 首屏列表有时是 JS 渲染出来的（HTML 里没有 li），改用接口取第一批
+    seen = set()
+    # 统一走接口取列表：HTML 首屏的 li 没有发布时间，接口才带 create_time
+    try:
+        n = take(page(), seen)
+        log("info", f"接口首批 {n} 篇")
+    except Exception as e:
+        log("warn", f"接口取列表失败：{e}")
     if not items:
-        log("warn", "首屏没有列表，改用接口获取…")
-        try:
-            n = take(page(), seen)
-            log("info", f"接口首批 {n} 篇")
-        except Exception as e:
-            log("warn", f"接口也失败：{e}")
+        items = parse_album_items(html_text)
+        seen = {(i["msgid"], i["itemidx"]) for i in items}
+        log("info", f"回退 HTML 首屏，取到 {len(items)} 篇")
+    log("info", "开始翻页…")
 
     guard = 0
     while items and guard < 400:
@@ -562,16 +573,16 @@ def parse_article_html(html_text):
             account = clean(m.group(1))
 
     pub = ""
-    m = re.search(r'id="publish_time"[^>]*>\s*([0-9]{4}-[0-9]{2}-[0-9]{2})', html_text)
+    m = re.search(r'var ct\s*=\s*"(\d{9,11})"', html_text)
     if m:
-        pub = m.group(1)
-    else:
-        m = re.search(r'var ct\s*=\s*"(\d{9,11})"', html_text)
+        try:
+            pub = datetime.datetime.fromtimestamp(int(m.group(1))).strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            pub = ""
+    if not pub:
+        m = re.search(r'id="publish_time"[^>]*>\s*([0-9]{4}-[0-9]{2}-[0-9]{2}(?:\s+[0-9]{2}:[0-9]{2})?)', html_text)
         if m:
-            try:
-                pub = datetime.datetime.fromtimestamp(int(m.group(1))).strftime("%Y-%m-%d")
-            except Exception:
-                pub = ""
+            pub = m.group(1)
 
     p = ContentParser()
     try:
@@ -1034,6 +1045,62 @@ def build_epub(album, chapters, opts, out_dir, log):
     manifest.append('<item id="titlepage" href="Text/titlepage.xhtml" media-type="application/xhtml+xml"/>')
     spine.append('<itemref idref="titlepage"/>')
 
+    # 书籍信息页（扉页）
+    def _pub(ch):
+        ct = int(ch.get("ctime") or 0)
+        if ct:
+            try:
+                return datetime.datetime.fromtimestamp(ct).strftime("%Y-%m-%d %H:%M")
+            except Exception:
+                pass
+        return str(ch.get("publish") or "").strip()
+
+    pubs = [p for p in (_pub(c) for c in chapters) if p]
+    first_pub = min(pubs) if pubs else ""
+    last_pub = max(pubs) if pubs else ""
+    total_chars = sum(article_chars(c["blocks"]) for c in chapters)
+    chars_text = (f"{total_chars / 10000:.1f} 万字" if total_chars >= 10000
+                  else f"{total_chars} 字")
+    album_id_s = str(album.get("album_id") or "")
+    biz_s = str(album.get("biz") or "")
+    link = ""
+    if biz_s and album_id_s:
+        link = (f"https://mp.weixin.qq.com/mp/appmsgalbum?__biz={biz_s}"
+                f"&action=getalbum&album_id={album_id_s}")
+    elif album.get("url"):
+        link = str(album.get("url")).split("#")[0]
+
+    lines = [f'<p class="no-indent">书名：{esc(title)}</p>',
+             f'<p class="no-indent">作者：{esc(author or "—")}</p>',
+             f'<p class="no-indent">字数：{esc(chars_text)}</p>',
+             f'<p class="no-indent">章节数：{total} 章</p>',
+             f'<p class="no-indent">书籍 ID：{esc(album_id_s or "—")}</p>']
+    if link:
+        lines.append(f'<p class="no-indent">合集链接：'
+                     f'<a href="{esc(link)}">{esc(link)}</a></p>')
+    lines.append(f'<p class="no-indent">首次发布：{esc(first_pub or "—")}</p>')
+    lines.append(f'<p class="no-indent">最近更新：{esc(last_pub or "—")}</p>')
+    desc = (album.get("desc") or "").strip()
+    if desc:
+        lines.append('<p class="no-indent">【简介】</p>')
+        for seg in [x.strip() for x in re.split(r"[\n\r]+", desc) if x.strip()][:12]:
+            lines.append(f'<p class="desc">{esc(seg)}</p>')
+
+    files["Text/bookinfo.xhtml"] = f"""<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+<head><meta charset="utf-8"/><title>书籍信息</title>
+<link rel="stylesheet" type="text/css" href="../Styles/style.css"/></head>
+<body class="info-page">
+<h1>书籍信息</h1>
+{chr(10).join(lines)}
+</body></html>"""
+    manifest.append('<item id="bookinfo" href="Text/bookinfo.xhtml" media-type="application/xhtml+xml"/>')
+    spine.append('<itemref idref="bookinfo"/>')
+    navli.append('<li><a href="Text/bookinfo.xhtml">书籍信息</a></li>')
+    ncx.append('<navPoint id="npinfo" playOrder="1"><navLabel><text>书籍信息</text></navLabel>'
+               '<content src="Text/bookinfo.xhtml"/></navPoint>')
+
     used_imgs = set()
     for i, ch in enumerate(chapters, 1):
         cid = f"chap{i:04d}"
@@ -1047,7 +1114,7 @@ def build_epub(album, chapters, opts, out_dir, log):
         manifest.append(f'<item id="{cid}" href="{href}" media-type="application/xhtml+xml"/>')
         spine.append(f'<itemref idref="{cid}"/>')
         navli.append(f'<li><a href="{href}">{esc(ch["title"])}</a></li>')
-        ncx.append(f'<navPoint id="np{i}" playOrder="{i}"><navLabel><text>{esc(ch["title"])}</text></navLabel>'
+        ncx.append(f'<navPoint id="np{i}" playOrder="{i + 1}"><navLabel><text>{esc(ch["title"])}</text></navLabel>'
                    f'<content src="{href}"/></navPoint>')
 
     if images:
@@ -1446,7 +1513,7 @@ def do_build(selected_keys, opts):
 
     total = len(arts)
     concurrency = int(opts.get("concurrency") or 1)
-    concurrency = max(1, min(10, concurrency))
+    concurrency = max(1, min(MAX_CONCURRENCY, concurrency))
     if concurrency > 1:
         set_phase("fetching", f"开始抓取正文（{concurrency} 线程并发）…")
     else:
@@ -1560,7 +1627,8 @@ def do_build(selected_keys, opts):
                 and not re.match(r"^\d+[\.、．]", ttl)):
             ttl = f"{no:0{max(2, len(str(total)))}d}. {ttl}"
         chapters.append({"title": ttl, "raw": r["raw"], "blocks": blocks, "no": no,
-                         "account": r.get("account"), "publish": r.get("publish")})
+                         "account": r.get("account"), "publish": r.get("publish"),
+                         "ctime": int(art.get("ctime") or 0)})
 
     if not chapters:
         set_phase("error", "一篇都没抓到，请检查网络或稍后重试")
@@ -1570,7 +1638,7 @@ def do_build(selected_keys, opts):
         opts2 = dict(opts)
         opts2["fetcher"] = f
         opts2["cancel"] = CTRL["cancel"]
-        result = build_epub(album, chapters, opts2, Path(opts.get("outdir") or OUT_DIR), log)
+        result = build_epub(album, chapters, opts2, Path(opts.get("outdir") or output_dir()), log)
         result["failures"] = failures[:30]
         with LOCK:
             STATE["result"] = result
