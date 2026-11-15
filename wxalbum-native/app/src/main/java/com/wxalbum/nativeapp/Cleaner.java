@@ -256,11 +256,14 @@ public final class Cleaner {
         if (html == null) return "";
         String s = html.replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", " ");
         s = s.replaceAll("(?i)<br\\s*/?>", "\n");
-        s = s.replaceAll("(?s)<[^>]+>", " ");
+        // 块级标签留一个换行，行内标签直接去掉（否则中文会被插入多余空格）
+        s = s.replaceAll("(?i)</(p|div|section|li|h[1-6]|blockquote)>", "\n");
+        s = s.replaceAll("(?s)<[^>]+>", "");
         s = unescape(s);
         s = s.replace('\u00a0', ' ');
         s = s.replaceAll("[ \\t\\x0B\\f\\r]+", " ");
-        s = s.replaceAll("\\n\\s*\\n+", "\n");
+        s = s.replaceAll(" *\\n *", "\n");
+        s = s.replaceAll("\\n{2,}", "\n");
         return s.trim();
     }
 

@@ -288,7 +288,10 @@ public final class WxApi {
             int close = seg.indexOf("</p>", tm.end());
             if (close < 0) break;
             String text = Cleaner.stripTags(seg.substring(tm.end(), close));
-            if (!text.isEmpty()) ch.blocks.add(new Model.Block(Model.Block.P, text));
+            for (String line : text.split("\n")) {
+                String t = line.trim();
+                if (!t.isEmpty()) ch.blocks.add(new Model.Block(Model.Block.P, t));
+            }
             tm.region(close + 4, seg.length());
         }
 

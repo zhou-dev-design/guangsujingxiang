@@ -112,9 +112,9 @@ public final class Engine {
 
     /* ==================== 解析 ==================== */
 
-    public void parse(final Context ctx, final String input, final boolean expand, final Done done) {
+    public void parse(final Context ctx, final String input, final boolean expand, final Done cb) {
         if (busy()) {
-            toast(done, false, "有任务正在进行");
+            toast(cb, false, "有任务正在进行");
             return;
         }
         cancelFlag = false;
@@ -150,7 +150,7 @@ public final class Engine {
             }
             final boolean fok = ok;
             final String fmsg = msg;
-            main.post(() -> done.run(fok, fmsg));
+            main.post(() -> cb.run(fok, fmsg));
         });
     }
 
@@ -210,21 +210,21 @@ public final class Engine {
 
     /* ==================== 抓取 + 打包 ==================== */
 
-    public void build(final Context ctx, final Set<String> keys, final Opts o, final Done done) {
+    public void build(final Context ctx, final Set<String> keys, final Opts o, final Done cb) {
         if (busy()) {
-            toast(done, false, "有任务正在进行");
+            toast(cb, false, "有任务正在进行");
             return;
         }
         cancelFlag = false;
         final Model.Album alb = album;
         if (alb == null || articles.isEmpty()) {
-            toast(done, false, "没有可生成的章节");
+            toast(cb, false, "没有可生成的章节");
             return;
         }
         final List<Model.Article> picked = new ArrayList<>();
         for (Model.Article a : articles) if (keys.contains(a.key())) picked.add(a);
         if (picked.isEmpty()) {
-            toast(done, false, "请至少选择一篇");
+            toast(cb, false, "请至少选择一篇");
             return;
         }
         done = 0;
@@ -245,7 +245,7 @@ public final class Engine {
                 List<Model.Chapter> chapters = fetchAll(ctx, alb, picked, o);
                 if (cancelFlag) {
                     set("cancelled", "已取消（完成 " + ok + " 篇）");
-                    finalMsg(done, false, "已取消");
+                    finalMsg(cb, false, "已取消");
                     return;
                 }
                 if (chapters.isEmpty()) throw new Exception("一篇都没抓到，请检查网络或稍后重试");
@@ -281,7 +281,7 @@ public final class Engine {
             }
             final boolean f = success;
             final String m = msg;
-            main.post(() -> done.run(f, m));
+            main.post(() -> cb.run(f, m));
         });
     }
 
@@ -490,9 +490,9 @@ public final class Engine {
 
     /* ==================== 书架 ==================== */
 
-    public void checkWatch(final Context ctx, final Done done) {
+    public void checkWatch(final Context ctx, final Done cb) {
         if (checking) {
-            toast(done, false, "正在检查中");
+            toast(cb, false, "正在检查中");
             return;
         }
         checking = true;
@@ -525,20 +525,20 @@ public final class Engine {
             checking = false;
             final int f = fresh;
             set("ready", fresh > 0 ? ("发现 " + fresh + " 章更新") : "全部已是最新");
-            main.post(() -> done.run(true, f > 0 ? ("有 " + f + " 章更新") : "全部已是最新"));
+            main.post(() -> cb.run(true, f > 0 ? ("有 " + f + " 章更新") : "全部已是最新"));
         });
     }
 
-    public void updateWatch(final Context ctx, final String albumId, final Done done) {
+    public void updateWatch(final Context ctx, final String albumId, final Done cb) {
         Stores.WatchItem w = Stores.findWatch(ctx, albumId);
         if (w == null) {
-            toast(done, false, "书架里没有这本书");
+            toast(cb, false, "书架里没有这本书");
             return;
         }
         String url = WxApi.ALBUM_API + "?__biz=" + w.biz + "&action=getalbum&album_id=" + w.albumId;
         parse(ctx, url, false, (ok, msg) -> {
             if (!ok) {
-                done.run(false, msg);
+                cb.run(false, msg);
                 return;
             }
             Opts o = new Opts();
@@ -552,7 +552,7 @@ public final class Engine {
             o.targetPath = w.epub;
             Set<String> keys = new LinkedHashSet<>();
             for (Model.Article a : articles) keys.add(a.key());
-            build(ctx, keys, o, done);
+            build(ctx, keys, o, cb);
         });
     }
 
