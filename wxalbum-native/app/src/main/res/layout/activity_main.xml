@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    android:background="?attr/cBg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/pageTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_download"
+                android:textColor="?attr/cText"
+                android:textSize="?attr/dT4"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/pageSub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/sub_download"
+                android:textColor="?attr/cText3"
+                android:textSize="?attr/dT1" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/phaseChip"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_chip"
+            android:gravity="center"
+            android:maxWidth="150dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="准备就绪"
+            android:textColor="?attr/cChipText"
+            android:textSize="?attr/dT1" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/cLine" />
+
+    <LinearLayout
+        android:id="@+id/tabbar"
+        android:layout_width="match_parent"
+        android:layout_height="62dp"
+        android:orientation="horizontal"
+        android:background="?attr/cTabBar">
+
+        <LinearLayout
+            android:id="@+id/tabDownload"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:id="@+id/icoDownload"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_tab_download"
+                android:contentDescription="@string/tab_download" />
+
+            <TextView
+                android:id="@+id/lblDownload"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/tab_download"
+                android:textColor="?attr/cPrimary"
+                android:textSize="?attr/dTab" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tabShelf"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:id="@+id/icoShelf"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_tab_watch"
+                android:contentDescription="@string/tab_shelf" />
+
+            <TextView
+                android:id="@+id/lblShelf"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/tab_shelf"
+                android:textColor="?attr/cText3"
+                android:textSize="?attr/dTab" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tabHistory"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:id="@+id/icoHistory"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_tab_history"
+                android:contentDescription="@string/tab_history" />
+
+            <TextView
+                android:id="@+id/lblHistory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/tab_history"
+                android:textColor="?attr/cText3"
+                android:textSize="?attr/dTab" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tabSettings"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:id="@+id/icoSettings"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_tab_settings"
+                android:contentDescription="@string/tab_settings" />
+
+            <TextView
+                android:id="@+id/lblSettings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/tab_settings"
+                android:textColor="?attr/cText3"
+                android:textSize="?attr/dTab" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

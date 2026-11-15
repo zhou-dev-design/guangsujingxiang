@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">公众号转EPUB·原生</string>
+    <string name="tab_download">下载</string>
+    <string name="tab_shelf">书架</string>
+    <string name="tab_history">历史</string>
+    <string name="tab_settings">设置</string>
+
+    <string name="title_download">下载</string>
+    <string name="title_shelf">书架</string>
+    <string name="title_history">历史</string>
+    <string name="title_settings">设置</string>
+
+    <string name="sub_download">粘贴合集或文章链接，自动反查整本</string>
+    <string name="sub_shelf">生成过的书会自动加入，可增量更新</string>
+    <string name="sub_history">每次生成留一条记录，可单独删文件或删记录</string>
+    <string name="sub_settings">保存位置、并发、主题与缓存</string>
+
+    <string name="hint_url">https://mp.weixin.qq.com/…</string>
+    <string name="btn_parse">解析</string>
+    <string name="btn_build">开始生成</string>
+    <string name="btn_cancel">取消</string>
+</resources>

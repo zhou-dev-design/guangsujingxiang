@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>公众号转 EPUB · 控制台</title>
+<link rel="stylesheet" href="/app.css"/>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= 侧边导航 ================= -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">E</div>
+      <div>
+        <b>公众号转 EPUB</b>
+        <span>合集抓取 · 排版 · 追踪</span>
+      </div>
+    </div>
+
+    <nav id="nav">
+      <button class="nav on" data-tab="download">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+        </svg>
+        <span>下载</span>
+      </button>
+      <button class="nav" data-tab="shelf">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M4 5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2z"/>
+          <path d="M17 7h3v14H6"/><path d="M8 7h6"/>
+        </svg>
+        <span>书架</span><span class="nb" id="navBadge"></span>
+      </button>
+      <button class="nav" data-tab="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+        </svg>
+        <span>历史</span>
+      </button>
+      <button class="nav" data-tab="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-2.9-1.2l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15H4.5a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 6 8.1l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 12 4.6V4.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 2.9 1.2l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 12h.1a2 2 0 1 1 0 4h-.1z"/>
+        </svg>
+        <span>设置</span>
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <button class="sm" id="btnTheme">切换浅色</button>
+      <a class="sm" href="/legacy" target="_blank" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center">旧版界面</a>
+      <div class="ver">v2.0 · 本地运行</div>
+    </div>
+  </aside>
+
+  <!-- ================= 内容 ================= -->
+  <main>
+    <header class="top">
+      <div>
+        <h1 id="pageTitle">下载</h1>
+        <p id="pageSub">粘贴合集链接或任意一篇文章，自动反查整本</p>
+      </div>
+      <div class="phase"><i class="dot" id="dot"></i><span id="phaseText">准备就绪</span></div>
+    </header>
+
+    <!-- ---------- 下载 ---------- -->
+    <section class="view on" id="view-download">
+      <div class="view-inner">
+
+        <div class="card">
+          <div class="card-h"><h2>链接</h2><span class="hint">合集 / 单篇文章都支持</span></div>
+          <div class="inputrow">
+            <input id="inp" placeholder="https://mp.weixin.qq.com/mp/appmsgalbum?...album_id=..." />
+            <button class="ghost" id="btnPaste" title="从剪贴板粘贴">粘贴</button>
+            <button class="primary" id="btnParse">解析</button>
+          </div>
+          <div class="opts">
+            <label class="chk"><input type="checkbox" id="optExpand" checked/>自动反查合集</label>
+            <label class="chk"><input type="checkbox" id="optImages"/>下载插图</label>
+            <label class="chk"><input type="checkbox" id="optBookinfo" checked/>书籍信息页</label>
+            <label class="chk"><input type="checkbox" id="optNumbering" checked/>标题加序号</label>
+            <label class="chk"><input type="checkbox" id="optCache" checked/>使用缓存</label>
+            <label class="chk">间隔 <input type="number" id="optDelay" value="0.5" min="0" max="10" step="0.1"/> 秒</label>
+            <label class="chk">标题
+              <select id="optTitle" style="height:30px;border-radius:9px;font-size:12px">
+                <option value="auto">自动识别</option>
+                <option value="first">正文第一行</option>
+                <option value="article">文章标题</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="card hidden" id="albumCard">
+          <div class="card-h"><h2>书籍信息</h2><span class="hint" id="albumHint"></span></div>
+          <div class="albumbox">
+            <div class="cover" id="cover">无封面</div>
+            <div class="fields">
+              <label>书名<input id="inpTitle"/></label>
+              <label>作者<input id="inpAuthor"/></label>
+              <div class="metarow" id="metarow"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card hidden" id="listCard">
+          <div class="card-h">
+            <h2>章节 <span class="badge" id="listCount">0</span></h2>
+            <div class="tools">
+              <button class="sm" data-sel="all">全选</button>
+              <button class="sm" data-sel="none">全不选</button>
+              <button class="sm" data-sel="invert">反选</button>
+              <button class="sm" data-sel="current">仅本文</button>
+              <button class="sm" data-sel="fail">仅失败</button>
+            </div>
+          </div>
+          <div class="alist" id="alist"></div>
+        </div>
+
+        <div class="actionbar" id="actionbar">
+          <div class="abinfo">
+            <b id="abTitle">等待解析</b>
+            <span id="abSub">解析后勾选章节即可生成 EPUB</span>
+          </div>
+          <button class="ghost" id="btnCancel" disabled>取消</button>
+          <button class="primary" id="btnBuild" disabled>开始生成</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 书架 ---------- -->
+    <section class="view" id="view-shelf">
+      <div class="view-inner">
+        <div class="card">
+          <div class="card-h">
+            <h2>书籍追踪</h2>
+            <span class="hint" id="shelfHint">生成过的合集会自动加入这里</span>
+            <button class="sm" id="btnCheckAll" style="margin-left:auto">检查更新</button>
+          </div>
+          <div class="shelf-grid" id="shelfGrid"></div>
+          <div class="empty" id="shelfEmpty" style="display:none">
+            <b>书架还是空的</b>
+            生成一本合集后会自动出现在这里，可以随时检查更新、增量下载新版
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 历史 ---------- -->
+    <section class="view" id="view-history">
+      <div class="view-inner">
+        <div class="card">
+          <div class="hbar">
+            <span class="selinfo" id="histInfo">共 0 条记录</span>
+            <button class="sm" id="btnHistAll">全选</button>
+            <button class="sm" id="btnHistNone">清空选择</button>
+            <button class="sm" id="btnDelRecord">删除记录</button>
+            <button class="sm danger" id="btnDelFile">删除文件</button>
+            <button class="sm danger" id="btnDelBoth">文件+记录</button>
+            <button class="sm" id="btnHistOpen">打开目录</button>
+          </div>
+          <div id="histList"></div>
+          <div class="empty" id="histEmpty" style="display:none">
+            <b>还没有生成记录</b>
+            每生成一本书都会在这里留一条，可在不删除文件的情况下清理记录
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 设置 ---------- -->
+    <section class="view" id="view-settings">
+      <div class="view-inner">
+        <div class="card">
+          <div class="card-h"><h2>下载</h2><span class="hint">改动即时生效</span></div>
+          <div class="setrow">
+            <div class="settext">
+              <div class="setk">保存位置</div>
+              <div class="setv" id="setDir">读取中…</div>
+            </div>
+            <button class="sm" id="btnChangeDir">更改</button>
+          </div>
+          <div class="setrow">
+            <div class="settext">
+              <div class="setk">下载线程</div>
+              <div class="setv" id="concHint">抓取是 IO 密集型，瓶颈在微信限流</div>
+            </div>
+            <select id="optConc">
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+              <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+              <option value="7">7</option><option value="8">8</option><option value="10">10</option>
+              <option value="12">12</option><option value="16">16</option><option value="20">20</option>
+              <option value="25">25</option><option value="30">30</option><option value="40">40</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+          <div class="setrow">
+            <div class="settext">
+              <div class="setk">默认下载插图</div>
+              <div class="setv">新任务是否默认抓取正文图片</div>
+            </div>
+            <label class="chk"><input type="checkbox" id="setImages"/> 开启</label>
+          </div>
+          <div class="setrow">
+            <div class="settext">
+              <div class="setk">默认书籍信息页</div>
+              <div class="setv">扉页：书名 / 作者 / 字数 / 章节数 / ID / 链接 / 时间</div>
+            </div>
+            <label class="chk"><input type="checkbox" id="setBookinfo" checked/> 开启</label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>界面</h2><span class="hint">只影响本机</span></div>
+          <div class="setrow">
+            <div class="settext">
+              <div class="setk">主题</div>
+              <div class="setv">深色适合长期盯着，浅色适合打印截图</div>
+            </div>
+            <select id="setTheme">
+              <option value="dark">深色</option>
+              <option value="light">浅色</option>
+            </select>
+          </div>
+          <div class="setrow">
+            <div class="settext">
+              <div class="setk">旧版界面</div>
+              <div class="setv">原来的单页布局，功能相同（保留备用）</div>
+            </div>
+            <a class="sm" href="/legacy" target="_blank" style="text-decoration:none;display:flex;align-items:center">打开</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>关于</h2></div>
+          <div class="setrow">
+            <div class="settext">
+              <div class="setk">公众号转 EPUB v2.0</div>
+              <div class="setv">纯本地运行 · 只用标准库 · 不联网上传任何内容</div>
+            </div>
+            <button class="sm" id="btnQuit">退出程序</button>
+          </div>
+          <div class="hintline">
+            数据都在程序目录：<code>cache/</code> 正文与图片缓存、<code>output/</code> 成品与 <code>_history/</code> 备份、
+            <code>watch.json</code> 书架、<code>history.json</code> 生成历史。
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ================= 进度 ================= -->
+<div class="dock" id="dock">
+  <div class="dockrow">
+    <button class="iconbtn" id="btnLog" title="展开日志">≡</button>
+    <span class="cur" id="dockCur">空闲</span>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <span class="nums" id="dockNums">0 / 0</span>
+  </div>
+  <div class="logbox" id="logbox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>

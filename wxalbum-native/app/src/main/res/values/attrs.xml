@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="cBg" format="color" />
+    <attr name="cSurface" format="color" />
+    <attr name="cSurface2" format="color" />
+    <attr name="cLine" format="color" />
+    <attr name="cLineStrong" format="color" />
+    <attr name="cText" format="color" />
+    <attr name="cText2" format="color" />
+    <attr name="cText3" format="color" />
+    <attr name="cPrimary" format="color" />
+    <attr name="cPrimarySoft" format="color" />
+    <attr name="cPrimaryLine" format="color" />
+    <attr name="cAccent" format="color" />
+    <attr name="cAccentSoft" format="color" />
+    <attr name="cWarn" format="color" />
+    <attr name="cDanger" format="color" />
+    <attr name="cDangerSoft" format="color" />
+    <attr name="cOnPrimary" format="color" />
+    <attr name="cTabBar" format="color" />
+    <attr name="cChipText" format="color" />
+    <attr name="cTrack" format="color" />
+    <attr name="monoMode" format="boolean" />
+
+    <attr name="dT0" format="dimension" />
+    <attr name="dT1" format="dimension" />
+    <attr name="dT2" format="dimension" />
+    <attr name="dT3" format="dimension" />
+    <attr name="dT4" format="dimension" />
+    <attr name="dT5" format="dimension" />
+    <attr name="dTab" format="dimension" />
+</resources>
