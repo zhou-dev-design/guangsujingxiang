@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!-- 墨水屏专用对话框：系统默认的分隔线/遮罩是浅灰，这里全部换成 1bit 黑白 -->
+    <style name="EinkDialog" parent="@android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:windowBackground">#FFFFFFFF</item>
+        <item name="android:colorAccent">#FF000000</item>
+        <item name="android:textColorPrimary">#FF000000</item>
+        <item name="android:textColorSecondary">#FF000000</item>
+        <item name="android:colorControlNormal">#FF000000</item>
+        <item name="android:colorControlActivated">#FF000000</item>
+        <item name="android:colorControlHighlight">#FFFFFFFF</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
     <!-- ============ 深色（默认） ============ -->
     <style name="AppTheme.Dark" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:colorPrimary">@color/primary</item>
@@ -35,6 +48,7 @@
         <item name="cChipText">#FF9DC0FF</item>
         <item name="cTrack">#14FFFFFF</item>
         <item name="monoMode">false</item>
+        <item name="eink6Mode">false</item>
 
         <item name="dT0">10sp</item>
         <item name="dT1">11.5sp</item>
@@ -79,6 +93,7 @@
         <item name="cChipText">#FF2F6FEB</item>
         <item name="cTrack">#1A0B1120</item>
         <item name="monoMode">false</item>
+        <item name="eink6Mode">false</item>
 
         <item name="dT0">10sp</item>
         <item name="dT1">11.5sp</item>
@@ -98,9 +113,16 @@
         <item name="android:statusBarColor">#FFFFFFFF</item>
         <item name="android:navigationBarColor">#FFFFFFFF</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <!-- 系统控件（CheckBox / 滚动条 / ripple）默认用灰，这里强制 1bit -->
+        <item name="android:colorControlNormal">#FF000000</item>
+        <item name="android:colorControlActivated">#FF000000</item>
+        <item name="android:colorControlHighlight">#FFFFFFFF</item>
+        <item name="android:alertDialogTheme">@style/EinkDialog</item>
         <item name="android:textColorPrimary">#FF000000</item>
-        <item name="android:textColorSecondary">#FF1A1A1A</item>
-        <item name="android:textColorHint">#FF444444</item>
+        <item name="android:textColorSecondary">#FF000000</item>
+        <item name="android:textColorHint">#FF000000</item>
 
         <item name="cBg">#FFFFFFFF</item>
         <item name="cSurface">#FFFFFFFF</item>
@@ -108,10 +130,10 @@
         <item name="cLine">#FF000000</item>
         <item name="cLineStrong">#FF000000</item>
         <item name="cText">#FF000000</item>
-        <item name="cText2">#FF1A1A1A</item>
-        <item name="cText3">#FF262626</item>
+        <item name="cText2">#FF000000</item>
+        <item name="cText3">#FF000000</item>
         <item name="cPrimary">#FF000000</item>
-        <item name="cPrimarySoft">#FFFFFFFF</item>
+        <item name="cPrimarySoft">#FF000000</item>
         <item name="cPrimaryLine">#FF000000</item>
         <item name="cAccent">#FF000000</item>
         <item name="cAccentSoft">#FFFFFFFF</item>
@@ -121,8 +143,9 @@
         <item name="cOnPrimary">#FFFFFFFF</item>
         <item name="cTabBar">#FFFFFFFF</item>
         <item name="cChipText">#FF000000</item>
-        <item name="cTrack">#FFCCCCCC</item>
+        <item name="cTrack">#FFFFFFFF</item>
         <item name="monoMode">true</item>
+        <item name="eink6Mode">false</item>
 
         <item name="dT0">12sp</item>
         <item name="dT1">13sp</item>
@@ -131,5 +154,63 @@
         <item name="dT4">23sp</item>
         <item name="dT5">30sp</item>
         <item name="dTab">11sp</item>
+    </style>
+
+    <!-- ============ 墨水屏 6 英寸专用（1072x1448 / 300dpi / 6.0"）============
+         与普通「墨水屏」的区别：
+         1) 1bit 黑白，零半透明零彩色，避免灰阶抖动与残影
+         2) 字号整体再放大一档，适配 572dp 宽但物理只有 6 英寸的高密屏
+         3) 纯黑 2dp 实线描边 + 近直角，减少圆角抗锯齿伪影
+         4) 关闭窗口动画；选中态改用反白（黑底白字），不靠浅灰区分
+         5) 运行时降低轮询频率并在空闲时跳过重绘（见 MainActivity）       -->
+    <style name="AppTheme.Eink6" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">#FF000000</item>
+        <item name="android:colorPrimaryDark">#FFFFFFFF</item>
+        <item name="android:colorAccent">#FF000000</item>
+        <item name="android:windowBackground">#FFFFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFFFF</item>
+        <item name="android:navigationBarColor">#FFFFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <!-- 系统控件（CheckBox / 滚动条 / ripple）默认用灰，这里强制 1bit -->
+        <item name="android:colorControlNormal">#FF000000</item>
+        <item name="android:colorControlActivated">#FF000000</item>
+        <item name="android:colorControlHighlight">#FFFFFFFF</item>
+        <item name="android:alertDialogTheme">@style/EinkDialog</item>
+        <item name="android:textColorPrimary">#FF000000</item>
+        <item name="android:textColorSecondary">#FF000000</item>
+        <item name="android:textColorHint">#FF000000</item>
+
+        <item name="cBg">#FFFFFFFF</item>
+        <item name="cSurface">#FFFFFFFF</item>
+        <item name="cSurface2">#FFFFFFFF</item>
+        <item name="cLine">#FF000000</item>
+        <item name="cLineStrong">#FF000000</item>
+        <item name="cText">#FF000000</item>
+        <item name="cText2">#FF000000</item>
+        <item name="cText3">#FF000000</item>
+        <item name="cPrimary">#FF000000</item>
+        <item name="cPrimarySoft">#FF000000</item>
+        <item name="cPrimaryLine">#FF000000</item>
+        <item name="cAccent">#FF000000</item>
+        <item name="cAccentSoft">#FFFFFFFF</item>
+        <item name="cWarn">#FF000000</item>
+        <item name="cDanger">#FF000000</item>
+        <item name="cDangerSoft">#FFFFFFFF</item>
+        <item name="cOnPrimary">#FFFFFFFF</item>
+        <item name="cTabBar">#FFFFFFFF</item>
+        <item name="cChipText">#FF000000</item>
+        <item name="cTrack">#FFFFFFFF</item>
+        <item name="monoMode">true</item>
+        <item name="eink6Mode">true</item>
+
+        <item name="dT0">14sp</item>
+        <item name="dT1">15.5sp</item>
+        <item name="dT2">18sp</item>
+        <item name="dT3">20sp</item>
+        <item name="dT4">27sp</item>
+        <item name="dT5">34sp</item>
+        <item name="dTab">13sp</item>
     </style>
 </resources>

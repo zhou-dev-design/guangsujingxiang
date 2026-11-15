@@ -8,6 +8,7 @@ import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -16,6 +17,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +27,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -48,6 +51,7 @@ public class MainActivity extends Activity {
     private final Handler ui = new Handler(Looper.getMainLooper());
     private Stores.Prefs prefs;
     private int tab = 0;
+    private String lastRefreshSig = "";   // 墨水屏空闲时跳过无变化的整屏重绘
 
     private TextView pageTitle, pageSub, phaseChip;
     private FrameLayout content;
@@ -106,7 +110,8 @@ public class MainActivity extends Activity {
         pageSub = findViewById(R.id.pageSub);
         phaseChip.setSingleLine(true);
         phaseChip.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        phaseChip.setMaxWidth(dp(132));
+        phaseChip.setMaxWidth(dp(Ui.eink6(this) ? 260 : 132));
+        if (Ui.eink6(this)) phaseChip.setBackgroundResource(R.drawable.bg_chip_e6);
         content = findViewById(R.id.content);
 
         tabViews[0] = findViewById(R.id.tabDownload);
@@ -143,16 +148,29 @@ public class MainActivity extends Activity {
         }, "recover").start();
         switchTab(0);
         refresh();
-        ui.postDelayed(ticker, 600);
+        ui.postDelayed(ticker, tickMs());
     }
 
     private final Runnable ticker = new Runnable() {
         @Override
         public void run() {
             refresh();
-            ui.postDelayed(this, 600);
+            ui.postDelayed(this, tickMs());
         }
     };
+
+    /** 墨水屏刷新慢、怕残影：轮询从 600ms 放慢到 1500ms。 */
+    private int tickMs() {
+        return Ui.eink6(this) ? 1500 : 600;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 从系统目录选择器返回（或 Activity 被回收重建）后重新读盘，保证设置页显示最新位置
+        prefs = Stores.prefs(this);
+        updateSettings();
+    }
 
     @Override
     protected void onDestroy() {
@@ -172,10 +190,20 @@ public class MainActivity extends Activity {
     private int themeRes(int mode) {
         if (mode == Stores.THEME_DARK) return R.style.AppTheme_Dark;
         if (mode == Stores.THEME_LIGHT) return R.style.AppTheme_Light;
-        if (mode == Stores.THEME_MONO) return R.style.AppTheme_Mono;
+        if (mode == Stores.THEME_EINK6) return R.style.AppTheme_Eink6;
+        if (mode == Stores.THEME_MONO) {
+            // 6 英寸 300dpi 设备上，普通「墨水屏」自动升级成专用样式
+            return eink6Hardware() ? R.style.AppTheme_Eink6 : R.style.AppTheme_Mono;
+        }
         boolean night = (getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         return night ? R.style.AppTheme_Dark : R.style.AppTheme_Light;
+    }
+
+    /** 按物理对角尺寸 + dpi 识别 6 英寸级墨水屏；400dpi 以上的普通手机不会误判。 */
+    private boolean eink6Hardware() {
+        DisplayMetrics m = getResources().getDisplayMetrics();
+        return Ui.isEink6Screen(m.widthPixels, m.heightPixels, m.xdpi, m.ydpi, m.densityDpi);
     }
 
     /* ==================== 导航 ==================== */
@@ -195,17 +223,28 @@ public class MainActivity extends Activity {
         pageTitle.setText(titles[idx]);
         pageSub.setText(subs[idx]);
         updateTabs();
-        if (idx == 3) updateCacheInfo();
+        if (idx == 3) {
+            updateSettings();
+            updateCacheInfo();
+        }
         refresh();
     }
 
     private void updateTabs() {
+        // 墨水屏只有黑白：选中态用反白黑块，不能靠深浅灰区分；顺手去掉 ripple 的半透明灰
+        boolean bw = Ui.mono(this);
         int on = Ui.color(this, R.attr.cPrimary);
         int off = Ui.color(this, R.attr.cText3);
         for (int i = 0; i < 4; i++) {
             boolean active = i == tab;
-            tabIcons[i].setColorFilter(active ? on : off);
-            tabLabels[i].setTextColor(active ? on : off);
+            if (bw) {
+                tabViews[i].setBackgroundColor(active ? 0xFF000000 : 0xFFFFFFFF);
+                tabIcons[i].setColorFilter(active ? 0xFFFFFFFF : 0xFF000000);
+                tabLabels[i].setTextColor(active ? 0xFFFFFFFF : 0xFF000000);
+            } else {
+                tabIcons[i].setColorFilter(active ? on : off);
+                tabLabels[i].setTextColor(active ? on : off);
+            }
             tabLabels[i].setTypeface(null, active ? Typeface.BOLD : Typeface.NORMAL);
         }
     }
@@ -214,6 +253,23 @@ public class MainActivity extends Activity {
 
     private int dp(float v) {
         return Ui.dp(this, v);
+    }
+
+    /** 禁用态：普通主题用半透明；墨水屏只有黑白，改用纯黑删除线，绝不产生灰阶。 */
+    private void dimButton(View v, boolean enabled) {
+        if (Ui.mono(this)) {
+            v.setAlpha(1f);
+            if (v instanceof TextView) {
+                TextView t = (TextView) v;
+                int flags = t.getPaint().getFlags();
+                t.getPaint().setFlags(enabled
+                        ? (flags & ~Paint.STRIKE_THRU_TEXT_FLAG)
+                        : (flags | Paint.STRIKE_THRU_TEXT_FLAG));
+                t.invalidate();
+            }
+        } else {
+            v.setAlpha(enabled ? 1f : 0.45f);
+        }
     }
 
     private ScrollView scroll(LinearLayout box) {
@@ -246,7 +302,7 @@ public class MainActivity extends Activity {
         e.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, Ui.dim(this, R.attr.dT2, 14));
         e.setTextColor(Ui.color(this, R.attr.cText));
         e.setHintTextColor(Ui.color(this, R.attr.cText3));
-        e.setBackgroundResource(R.drawable.bg_input);
+        e.setBackgroundResource(Ui.eink6(this) ? R.drawable.bg_input_e6 : R.drawable.bg_input);
         e.setPadding(dp(12), dp(8), dp(12), dp(8));
         e.setMinHeight(dp(46));
         return e;
@@ -352,7 +408,7 @@ public class MainActivity extends Activity {
         o3.addView(Ui.text(this, "标题", Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText2, false));
         btnTitleMode = Ui.text(this, TITLE_MODES[titleModePos],
                 Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText, false);
-        btnTitleMode.setBackgroundResource(R.drawable.bg_input);
+        btnTitleMode.setBackgroundResource(Ui.eink6(this) ? R.drawable.bg_input_e6 : R.drawable.bg_input);
         btnTitleMode.setGravity(Gravity.CENTER);
         btnTitleMode.setClickable(true);
         btnTitleMode.setFocusable(true);
@@ -409,7 +465,8 @@ public class MainActivity extends Activity {
         actionCard.addView(abSub);
 
         prog = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        prog.setProgressDrawable(getDrawable(R.drawable.progress_dl));
+        prog.setProgressDrawable(getDrawable(
+                Ui.eink6(this) ? R.drawable.progress_e6 : R.drawable.progress_dl));
         prog.setMax(100);
         LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(6));
@@ -703,11 +760,11 @@ public class MainActivity extends Activity {
     private void updateBuildButton() {
         boolean busy = Engine.I.busy();
         btnBuild.setEnabled(!busy && !selected.isEmpty());
-        btnBuild.setAlpha(busy || selected.isEmpty() ? 0.45f : 1f);
+        dimButton(btnBuild, !busy && !selected.isEmpty());
         btnCancel.setEnabled(busy);
-        btnCancel.setAlpha(busy ? 1f : 0.45f);
+        dimButton(btnCancel, busy);
         btnParse.setEnabled(!busy);
-        btnParse.setAlpha(busy ? 0.45f : 1f);
+        dimButton(btnParse, !busy);
         btnBuild.setText(busy ? "处理中…" : ("开始生成" + (selected.isEmpty() ? "" : "（" + selected.size() + "）")));
         if (Engine.I.album != null) {
             abMain.setText(selected.size() + " / " + Engine.I.articles.size() + " 篇已选");
@@ -830,7 +887,7 @@ public class MainActivity extends Activity {
         shelfHint.setText(Engine.I.checking ? "正在检查…"
                 : (fresh > 0 ? ("发现 " + fresh + " 章更新") : "生成过的合集会自动加入这里"));
         btnCheck.setEnabled(!Engine.I.checking);
-        btnCheck.setAlpha(Engine.I.checking ? 0.45f : 1f);
+        dimButton(btnCheck, !Engine.I.checking);
 
         shelfBox.removeAllViews();
         if (items.isEmpty()) {
@@ -1141,7 +1198,7 @@ public class MainActivity extends Activity {
         open.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, Ui.dim(this, R.attr.dT0, 10));
         save.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, Ui.dim(this, R.attr.dT0, 10));
         open.setEnabled(h.exists);
-        open.setAlpha(h.exists ? 1f : 0.4f);
+        dimButton(open, h.exists);
         open.setOnClickListener(v -> openEpub(h));
         save.setOnClickListener(v -> saveToPhone(h));
         acts.addView(open);
@@ -1212,7 +1269,15 @@ public class MainActivity extends Activity {
 
         LinearLayout c1 = Ui.card(this);
         c1.addView(header("下载", "改动即时生效"));
-        c1.addView(settingRow("保存位置", "默认写入 下载/公众号EPUB", dirActions()));
+        c1.addView(settingRow("保存位置", "生成后点「导出」写入这里", dirActions()));
+        // 当前路径单独占一整行：以前挤在按钮旁只有 120dp，改完只显示「自定义目录」四个字
+        setDir = Ui.text(this, "", Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText2, false);
+        setDir.setMaxLines(3);
+        setDir.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        setDir.setPadding(0, 0, 0, dp(2));
+        setDir.setOnClickListener(v -> showDirDetail());
+        c1.addView(setDir, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         Ui.divider(this, c1);
         c1.addView(settingRow("下载线程", "1 最稳，10 最快；过高容易被限流", concActions()));
         Ui.divider(this, c1);
@@ -1236,8 +1301,36 @@ public class MainActivity extends Activity {
         LinearLayout c2 = Ui.card(this);
         c2.addView(header("界面", "只影响本机"));
         themeRow = Ui.row(this);
-        themeRow.setPadding(0, dp(6), 0, 0);
-        c2.addView(themeRow);
+        themeRow.setPadding(0, dp(6), 0, dp(4));
+        HorizontalScrollView themeScroll = new HorizontalScrollView(this);
+        themeScroll.setHorizontalScrollBarEnabled(false);
+        themeScroll.addView(themeRow);   // 五个主题在窄屏可横滑，不再挤成竖排
+        c2.addView(themeScroll);
+        if (eink6Hardware()) {
+            DisplayMetrics m = getResources().getDisplayMetrics();
+            String info = String.format(Locale.getDefault(),
+                    "已识别 %d×%d · %ddpi · %.1f 英寸墨水屏",
+                    m.widthPixels, m.heightPixels, m.densityDpi,
+                    Ui.diagInches(m.widthPixels, m.heightPixels, m.xdpi, m.ydpi));
+            if (prefs.theme == Stores.THEME_MONO) info += "\n当前「墨水屏」已自动套用 6″ 专用布局";
+            TextView hw = Ui.text(this, info, Ui.dim(this, R.attr.dT0, 10), R.attr.cText2, false);
+            LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            hlp.topMargin = dp(10);
+            c2.addView(hw, hlp);
+            if (prefs.theme != Stores.THEME_EINK6 && prefs.theme != Stores.THEME_MONO) {
+                TextView apply = Ui.smallButton(this, "切换到「墨水屏 6″」");
+                LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                alp.topMargin = dp(8);
+                apply.setOnClickListener(v -> {
+                    prefs.theme = Stores.THEME_EINK6;
+                    Stores.savePrefs(this, prefs);
+                    recreate();
+                });
+                c2.addView(apply, alp);
+            }
+        }
         box.addView(c2, cardLp(10));
 
         LinearLayout c3 = Ui.card(this);
@@ -1274,7 +1367,7 @@ public class MainActivity extends Activity {
         c4.addView(about);
         TextView legacy = Ui.smallButton(this, "旧版（Chaquopy）可同时安装");
         legacy.setEnabled(false);
-        legacy.setAlpha(0.7f);
+        dimButton(legacy, false);
         LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         llp.topMargin = dp(10);
@@ -1302,11 +1395,6 @@ public class MainActivity extends Activity {
 
     private View dirActions() {
         LinearLayout r = Ui.row(this);
-        setDir = Ui.text(this, "", Ui.dim(this, R.attr.dT0, 10), R.attr.cText3, false);
-        setDir.setSingleLine(true);
-        setDir.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
-        setDir.setMaxWidth(dp(120));
-        r.addView(setDir);
         TextView pick = Ui.smallButton(this, "更改");
         TextView reset = Ui.smallButton(this, "默认");
         pick.setOnClickListener(v -> pickDir());
@@ -1352,9 +1440,40 @@ public class MainActivity extends Activity {
 
     private void updateSettings() {
         if (setDir != null) {
-            setDir.setText(prefs.treeUri.isEmpty() ? "下载/公众号EPUB" : "自定义目录");
+            String s = dirDisplay();
+            // 墨水屏上每轮刷新都 setText 会反复重绘；内容没变就不动
+            if (!s.contentEquals(setDir.getText())) setDir.setText(s);
         }
-        if (setConc != null) setConc.setText(String.valueOf(prefs.concurrency));
+        if (setConc != null) {
+            String s = String.valueOf(prefs.concurrency);
+            if (!s.contentEquals(setConc.getText())) setConc.setText(s);
+        }
+    }
+
+    /** 显示用户能看懂的目录名，而不是原来写死的「自定义目录」。 */
+    private String dirDisplay() {
+        if (prefs.treeUri == null || prefs.treeUri.isEmpty()) {
+            return "当前：系统「下载 / 公众号EPUB」（默认）";
+        }
+        String name;
+        try {
+            name = Exporter.dirLabel(this, Uri.parse(prefs.treeUri));
+        } catch (Exception e) {
+            name = "所选目录";
+        }
+        return "当前：" + name + "\n点此查看完整路径";
+    }
+
+    private void showDirDetail() {
+        boolean custom = prefs.treeUri != null && !prefs.treeUri.isEmpty();
+        String full = custom ? prefs.treeUri
+                : "未自定义。生成的 EPUB 先存在应用内目录，点「导出」再写入系统「下载/公众号EPUB」。";
+        new AlertDialog.Builder(this)
+                .setTitle("保存位置")
+                .setMessage(dirDisplay().replace("点此查看完整路径", "").trim()
+                        + "\n\n" + (custom ? "完整路径：\n" : "") + full)
+                .setPositiveButton("知道了", null)
+                .show();
     }
 
     private void updateCacheInfo() {
@@ -1395,15 +1514,22 @@ public class MainActivity extends Activity {
 
     private void buildThemeChips() {
         themeRow.removeAllViews();
-        String[] names = {"深色", "浅色", "墨水屏", "自动"};
-        int[] modes = {Stores.THEME_DARK, Stores.THEME_LIGHT, Stores.THEME_MONO, Stores.THEME_AUTO};
+        String[] names = {"深色", "浅色", "墨水屏", "墨水屏 6″", "自动"};
+        int[] modes = {Stores.THEME_DARK, Stores.THEME_LIGHT, Stores.THEME_MONO,
+                Stores.THEME_EINK6, Stores.THEME_AUTO};
+        boolean bw = Ui.mono(this);
         for (int i = 0; i < names.length; i++) {
             final int mode = modes[i];
             boolean on = prefs.theme == mode;
-            TextView chip = Ui.chip(this, names[i],
-                    on ? R.attr.cPrimary : R.attr.cText2,
-                    on ? Ui.color(this, R.attr.cPrimarySoft) : Ui.color(this, R.attr.cSurface2));
-            chip.setPadding(dp(14), dp(8), dp(14), dp(8));
+            TextView chip;
+            if (bw) {
+                chip = Ui.chipBw(this, names[i], on);   // 1bit：选中反白，不用灰度
+            } else {
+                chip = Ui.chip(this, names[i],
+                        on ? R.attr.cPrimary : R.attr.cText2,
+                        on ? Ui.color(this, R.attr.cPrimarySoft) : Ui.color(this, R.attr.cSurface2));
+                chip.setPadding(dp(14), dp(8), dp(14), dp(8));
+            }
             chip.setOnClickListener(v -> {
                 prefs.theme = mode;
                 Stores.savePrefs(this, prefs);
@@ -1434,15 +1560,24 @@ public class MainActivity extends Activity {
         super.onActivityResult(req, res, data);
         if (req == REQ_TREE && res == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData();
+            boolean persisted = true;
             try {
                 getContentResolver().takePersistableUriPermission(uri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                persisted = false;
             }
             prefs.treeUri = uri.toString();
             Stores.savePrefs(this, prefs);
             updateSettings();
-            toast("保存位置已更新");
+            String name;
+            try {
+                name = Exporter.dirLabel(this, uri);
+            } catch (Exception e) {
+                name = "所选目录";
+            }
+            toast(persisted ? "保存位置已更新：" + name
+                    : "目录已记录，但系统未授予长期权限，重启后可能需要重选");
         }
     }
 
@@ -1487,6 +1622,14 @@ public class MainActivity extends Activity {
 
     private void refresh() {
         if (Engine.I == null) return;
+        // 墨水屏空闲时状态没变就整屏跳过，避免每轮 setText 触发无意义的刷新与残影
+        if (Ui.eink6(this)) {
+            String sig = tab + "|" + Engine.I.phase + "|" + Engine.I.message + "|"
+                    + Engine.I.done + "/" + Engine.I.total + "|" + Engine.I.logs.size()
+                    + "|" + Engine.I.checking + "|" + prefs.treeUri + "|" + prefs.concurrency;
+            if (!Engine.I.busy() && sig.equals(lastRefreshSig)) return;
+            lastRefreshSig = sig;
+        }
         phaseChip.setText(Engine.I.message);
         int colorAttr = Engine.I.phase.equals("error") ? R.attr.cDanger
                 : Engine.I.phase.equals("done") ? R.attr.cPrimary

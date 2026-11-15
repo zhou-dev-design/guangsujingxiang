@@ -21,6 +21,8 @@
     <attr name="cChipText" format="color" />
     <attr name="cTrack" format="color" />
     <attr name="monoMode" format="boolean" />
+    <!-- 6 英寸 300dpi 墨水屏专用模式：更大字号、纯 1bit 黑白、粗描边、低刷新 -->
+    <attr name="eink6Mode" format="boolean" />
 
     <attr name="dT0" format="dimension" />
     <attr name="dT1" format="dimension" />

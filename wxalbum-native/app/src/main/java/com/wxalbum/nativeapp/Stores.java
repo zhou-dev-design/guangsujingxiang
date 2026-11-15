@@ -23,6 +23,8 @@ public final class Stores {
     public static final int THEME_LIGHT = 1;
     public static final int THEME_MONO = 2;
     public static final int THEME_AUTO = 3;
+    /** 6 英寸 300dpi 墨水屏专用（1bit 黑白 + 大字 + 低刷新） */
+    public static final int THEME_EINK6 = 4;
 
     public static class Prefs {
         public int theme = THEME_AUTO;

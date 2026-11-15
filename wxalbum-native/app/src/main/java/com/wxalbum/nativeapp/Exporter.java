@@ -77,7 +77,8 @@ public final class Exporter {
         return r;
     }
 
-    private static String dirLabel(Context c, Uri tree) {
+    /** 把 SAF tree URI 转成给用户看的目录名（public 供设置页显示当前保存位置）。 */
+    public static String dirLabel(Context c, Uri tree) {
         String s = tree.toString();
         int i = s.indexOf("tree/");
         if (i > 0) {

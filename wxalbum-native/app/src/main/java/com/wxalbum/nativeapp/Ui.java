@@ -26,7 +26,7 @@ public final class Ui {
             if (tv.resourceId != 0) return c.getColor(tv.resourceId);
             return tv.data;
         }
-        return 0xFF888888;
+        return 0xFF000000;   // 兜底也用纯黑，墨水屏上不能出现灰色
     }
 
     public static float dim(Context c, int attr, float fallbackSp) {
@@ -38,9 +38,29 @@ public final class Ui {
                 c.getResources().getDisplayMetrics());
     }
 
+    /** 所有黑白墨水屏主题（Mono / Eink6）都为 true：禁止任何灰阶与半透明。 */
     public static boolean mono(Context c) {
         TypedValue tv = new TypedValue();
         return c.getTheme().resolveAttribute(R.attr.monoMode, tv, true) && tv.data != 0;
+    }
+
+    /** 6 英寸 300dpi 专用主题。 */
+    public static boolean eink6(Context c) {
+        TypedValue tv = new TypedValue();
+        return c.getTheme().resolveAttribute(R.attr.eink6Mode, tv, true) && tv.data != 0;
+    }
+
+    /** 物理对角尺寸（英寸），纯计算便于在 JVM 上测试。 */
+    public static double diagInches(float wPx, float hPx, float xdpi, float ydpi) {
+        if (xdpi <= 0 || ydpi <= 0) return 0;
+        double w = wPx / (double) xdpi, h = hPx / (double) ydpi;
+        return Math.sqrt(w * w + h * h);
+    }
+
+    /** 6 英寸级且 260~340dpi 才判定为墨水阅读器；400dpi 以上的普通手机不匹配。 */
+    public static boolean isEink6Screen(float wPx, float hPx, float xdpi, float ydpi, int densityDpi) {
+        double d = diagInches(wPx, hPx, xdpi, ydpi);
+        return d >= 5.4 && d <= 7.2 && densityDpi >= 260 && densityDpi <= 340;
     }
 
     public static LinearLayout column(Context c) {
@@ -81,48 +101,78 @@ public final class Ui {
     /** 卡片：圆角 20dp + 1px 描边。 */
     public static LinearLayout card(Context c) {
         LinearLayout l = column(c);
-        l.setBackgroundResource(R.drawable.bg_card);
-        int p = dp(c, 16);
+        boolean e6 = eink6(c);
+        l.setBackgroundResource(e6 ? R.drawable.bg_card_e6 : R.drawable.bg_card);
+        int p = dp(c, e6 ? 22 : 16);
         l.setPadding(p, p, p, p);
         return l;
     }
 
     public static TextView button(Context c, String s, boolean primary) {
         TextView b = text(c, s, dim(c, R.attr.dT2, 14), primary ? R.attr.cOnPrimary : R.attr.cText, true);
-        b.setBackgroundResource(primary ? R.drawable.bg_primary : R.drawable.bg_ghost);
+        boolean e6 = eink6(c);
+        b.setBackgroundResource(primary
+                ? (e6 ? R.drawable.bg_primary_e6 : R.drawable.bg_primary)
+                : (e6 ? R.drawable.bg_ghost_e6 : R.drawable.bg_ghost));
         b.setGravity(Gravity.CENTER);
         b.setClickable(true);
         b.setFocusable(true);
-        b.setPadding(dp(c, 16), dp(c, 10), dp(c, 16), dp(c, 10));
-        b.setMinHeight(dp(c, 44));
+        b.setPadding(dp(c, e6 ? 20 : 16), dp(c, e6 ? 14 : 10),
+                dp(c, e6 ? 20 : 16), dp(c, e6 ? 14 : 10));
+        b.setMinHeight(dp(c, e6 ? 56 : 44));
         return b;
     }
 
     public static TextView smallButton(Context c, String s) {
         TextView b = text(c, s, dim(c, R.attr.dT1, 11.5f), R.attr.cText2, false);
-        b.setBackgroundResource(R.drawable.bg_ghost);
+        boolean e6 = eink6(c);
+        b.setBackgroundResource(e6 ? R.drawable.bg_ghost_e6 : R.drawable.bg_ghost);
         b.setGravity(Gravity.CENTER);
         b.setClickable(true);
         b.setFocusable(true);
-        b.setPadding(dp(c, 10), dp(c, 6), dp(c, 10), dp(c, 6));
+        b.setPadding(dp(c, e6 ? 14 : 10), dp(c, e6 ? 11 : 6),
+                dp(c, e6 ? 14 : 10), dp(c, e6 ? 11 : 6));
+        if (e6) b.setMinHeight(dp(c, 48));
         return b;
     }
 
     public static TextView dangerButton(Context c, String s) {
         TextView b = text(c, s, dim(c, R.attr.dT1, 11.5f), R.attr.cDanger, false);
-        b.setBackgroundResource(R.drawable.bg_danger);
+        boolean e6 = eink6(c);
+        b.setBackgroundResource(e6 ? R.drawable.bg_danger_e6 : R.drawable.bg_danger);
         b.setGravity(Gravity.CENTER);
         b.setClickable(true);
         b.setFocusable(true);
-        b.setPadding(dp(c, 10), dp(c, 6), dp(c, 10), dp(c, 6));
+        b.setPadding(dp(c, e6 ? 14 : 10), dp(c, e6 ? 11 : 6),
+                dp(c, e6 ? 14 : 10), dp(c, e6 ? 11 : 6));
+        if (e6) b.setMinHeight(dp(c, 48));
         return b;
+    }
+
+    /** 1bit 专用胶囊：选中反白（黑底白字），未选中白底黑字；靠反白而非灰度区分。 */
+    public static TextView chipBw(Context c, String s, boolean selected) {
+        TextView t = text(c, s, dim(c, R.attr.dT1, 11.5f),
+                selected ? R.attr.cOnPrimary : R.attr.cText, true);
+        GradientDrawable d = new GradientDrawable();
+        d.setCornerRadius(dp(c, 2));
+        d.setColor(selected ? 0xFF000000 : 0xFFFFFFFF);
+        d.setStroke(Math.max(2, dp(c, 2)), 0xFF000000);
+        t.setBackground(d);
+        t.setPadding(dp(c, 14), dp(c, 10), dp(c, 14), dp(c, 10));
+        return t;
     }
 
     public static TextView chip(Context c, String s, int colorAttr, int bgColor) {
         TextView t = text(c, s, dim(c, R.attr.dT1, 11.5f), colorAttr, false);
         GradientDrawable d = new GradientDrawable();
-        d.setCornerRadius(dp(c, 100));
+        boolean bw = mono(c);
+        d.setCornerRadius(bw ? dp(c, 2) : dp(c, 100));
         d.setColor(bgColor);
+        if (bw) {
+            // 1bit：靠实线黑框区分，黑底一律反白字，绝不出现灰或黑底黑字
+            d.setStroke(Math.max(2, dp(c, 2)), 0xFF000000);
+            if (bgColor == 0xFF000000) t.setTextColor(0xFFFFFFFF);
+        }
         t.setBackground(d);
         t.setPadding(dp(c, 9), dp(c, 3), dp(c, 9), dp(c, 3));
         return t;
@@ -168,7 +218,8 @@ public final class Ui {
     public static void divider(Context c, LinearLayout parent) {
         View v = new View(c);
         v.setBackgroundColor(color(c, R.attr.cLine));
+        int h = eink6(c) ? Math.max(2, dp(c, 2)) : Math.max(1, dp(c, 0.7f));
         parent.addView(v, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(c, 0.7f))));
+                ViewGroup.LayoutParams.MATCH_PARENT, h));
     }
 }
