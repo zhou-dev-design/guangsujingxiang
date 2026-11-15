@@ -2,6 +2,7 @@ name: 构建公众号转EPUB 原生版
 
 on:
   push:
+    branches: [wechat-epub-downloader]
     paths:
       - "wxalbum-native/**"
       - ".github/workflows/wxalbum-native.yml"
@@ -116,7 +117,7 @@ jobs:
           path: dist/*.apk
 
       - name: 发布到 Release
-        if: github.ref == 'refs/heads/wxalbum'
+        if: github.ref == 'refs/heads/wechat-epub-downloader'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: wxalbum-native-latest
