@@ -274,7 +274,9 @@ body.eink .badge{background:#fff!important;border:1px solid #000;color:#000}
           <div class="field"><label>作者 / 公众号</label><input type="text" id="fAuthor" placeholder="自动读取"/></div>
         </div>
         <div class="opts">
-          <label class="chk"><input type="checkbox" id="optImg" checked/>下载插图</label>
+          <label class="chk"><input type="checkbox" id="optImg"/>下载插图</label>
+          <label class="chk" title="在书名页后插入一页书籍信息（书名/作者/字数/章节数/ID/链接/时间）">
+            <input type="checkbox" id="optBookinfo" checked/>书籍信息页</label>
           <label class="chk" title="粘贴单篇文章链接时，自动反查它所属的合集并载入整本">
             <input type="checkbox" id="optExpand" checked/>自动反查合集</label>
           <label class="chk"><input type="checkbox" id="optNum" checked/>标题加序号</label>
@@ -598,6 +600,7 @@ $('#btnBuild').onclick = async () => {
       images: $('#optImg').checked,
       numbering: $('#optNum').checked,
       cache: $('#optCache').checked,
+      bookinfo: $('#optBookinfo').checked,
       concurrency: parseInt($('#optConc').value) || 1,
       titlemode: $('#optTitle').value,
       delay: parseFloat($('#optDelay').value) || 0

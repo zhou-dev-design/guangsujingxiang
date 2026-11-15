@@ -1045,61 +1045,63 @@ def build_epub(album, chapters, opts, out_dir, log):
     manifest.append('<item id="titlepage" href="Text/titlepage.xhtml" media-type="application/xhtml+xml"/>')
     spine.append('<itemref idref="titlepage"/>')
 
-    # 书籍信息页（扉页）
-    def _pub(ch):
-        ct = int(ch.get("ctime") or 0)
-        if ct:
-            try:
-                return datetime.datetime.fromtimestamp(ct).strftime("%Y-%m-%d %H:%M")
-            except Exception:
-                pass
-        return str(ch.get("publish") or "").strip()
+    show_info = bool(opts.get("bookinfo", True))
+    if show_info:
+        # 书籍信息页（扉页）
+        def _pub(ch):
+            ct = int(ch.get("ctime") or 0)
+            if ct:
+                try:
+                    return datetime.datetime.fromtimestamp(ct).strftime("%Y-%m-%d %H:%M")
+                except Exception:
+                    pass
+            return str(ch.get("publish") or "").strip()
 
-    pubs = [p for p in (_pub(c) for c in chapters) if p]
-    first_pub = min(pubs) if pubs else ""
-    last_pub = max(pubs) if pubs else ""
-    total_chars = sum(article_chars(c["blocks"]) for c in chapters)
-    chars_text = (f"{total_chars / 10000:.1f} 万字" if total_chars >= 10000
-                  else f"{total_chars} 字")
-    album_id_s = str(album.get("album_id") or "")
-    biz_s = str(album.get("biz") or "")
-    link = ""
-    if biz_s and album_id_s:
-        link = (f"https://mp.weixin.qq.com/mp/appmsgalbum?__biz={biz_s}"
-                f"&action=getalbum&album_id={album_id_s}")
-    elif album.get("url"):
-        link = str(album.get("url")).split("#")[0]
+        pubs = [p for p in (_pub(c) for c in chapters) if p]
+        first_pub = min(pubs) if pubs else ""
+        last_pub = max(pubs) if pubs else ""
+        total_chars = sum(article_chars(c["blocks"]) for c in chapters)
+        chars_text = (f"{total_chars / 10000:.1f} 万字" if total_chars >= 10000
+                      else f"{total_chars} 字")
+        album_id_s = str(album.get("album_id") or "")
+        biz_s = str(album.get("biz") or "")
+        link = ""
+        if biz_s and album_id_s:
+            link = (f"https://mp.weixin.qq.com/mp/appmsgalbum?__biz={biz_s}"
+                    f"&action=getalbum&album_id={album_id_s}")
+        elif album.get("url"):
+            link = str(album.get("url")).split("#")[0]
 
-    lines = [f'<p class="no-indent">书名：{esc(title)}</p>',
-             f'<p class="no-indent">作者：{esc(author or "—")}</p>',
-             f'<p class="no-indent">字数：{esc(chars_text)}</p>',
-             f'<p class="no-indent">章节数：{total} 章</p>',
-             f'<p class="no-indent">书籍 ID：{esc(album_id_s or "—")}</p>']
-    if link:
-        lines.append(f'<p class="no-indent">合集链接：'
-                     f'<a href="{esc(link)}">{esc(link)}</a></p>')
-    lines.append(f'<p class="no-indent">首次发布：{esc(first_pub or "—")}</p>')
-    lines.append(f'<p class="no-indent">最近更新：{esc(last_pub or "—")}</p>')
-    desc = (album.get("desc") or "").strip()
-    if desc:
-        lines.append('<p class="no-indent">【简介】</p>')
-        for seg in [x.strip() for x in re.split(r"[\n\r]+", desc) if x.strip()][:12]:
-            lines.append(f'<p class="desc">{esc(seg)}</p>')
+        lines = [f'<p class="no-indent">书名：{esc(title)}</p>',
+                 f'<p class="no-indent">作者：{esc(author or "—")}</p>',
+                 f'<p class="no-indent">字数：{esc(chars_text)}</p>',
+                 f'<p class="no-indent">章节数：{total} 章</p>',
+                 f'<p class="no-indent">书籍 ID：{esc(album_id_s or "—")}</p>']
+        if link:
+            lines.append(f'<p class="no-indent">合集链接：'
+                         f'<a href="{esc(link)}">{esc(link)}</a></p>')
+        lines.append(f'<p class="no-indent">首次发布：{esc(first_pub or "—")}</p>')
+        lines.append(f'<p class="no-indent">最近更新：{esc(last_pub or "—")}</p>')
+        desc = (album.get("desc") or "").strip()
+        if desc:
+            lines.append('<p class="no-indent">【简介】</p>')
+            for seg in [x.strip() for x in re.split(r"[\n\r]+", desc) if x.strip()][:12]:
+                lines.append(f'<p class="desc">{esc(seg)}</p>')
 
-    files["Text/bookinfo.xhtml"] = f"""<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
-<head><meta charset="utf-8"/><title>书籍信息</title>
-<link rel="stylesheet" type="text/css" href="../Styles/style.css"/></head>
-<body class="info-page">
-<h1>书籍信息</h1>
-{chr(10).join(lines)}
-</body></html>"""
-    manifest.append('<item id="bookinfo" href="Text/bookinfo.xhtml" media-type="application/xhtml+xml"/>')
-    spine.append('<itemref idref="bookinfo"/>')
-    navli.append('<li><a href="Text/bookinfo.xhtml">书籍信息</a></li>')
-    ncx.append('<navPoint id="npinfo" playOrder="1"><navLabel><text>书籍信息</text></navLabel>'
-               '<content src="Text/bookinfo.xhtml"/></navPoint>')
+        files["Text/bookinfo.xhtml"] = f"""<?xml version="1.0" encoding="utf-8"?>
+    <!DOCTYPE html>
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN">
+    <head><meta charset="utf-8"/><title>书籍信息</title>
+    <link rel="stylesheet" type="text/css" href="../Styles/style.css"/></head>
+    <body class="info-page">
+    <h1>书籍信息</h1>
+    {chr(10).join(lines)}
+    </body></html>"""
+        manifest.append('<item id="bookinfo" href="Text/bookinfo.xhtml" media-type="application/xhtml+xml"/>')
+        spine.append('<itemref idref="bookinfo"/>')
+        navli.append('<li><a href="Text/bookinfo.xhtml">书籍信息</a></li>')
+        ncx.append('<navPoint id="npinfo" playOrder="1"><navLabel><text>书籍信息</text></navLabel>'
+                   '<content src="Text/bookinfo.xhtml"/></navPoint>')
 
     used_imgs = set()
     for i, ch in enumerate(chapters, 1):
@@ -1114,7 +1116,7 @@ def build_epub(album, chapters, opts, out_dir, log):
         manifest.append(f'<item id="{cid}" href="{href}" media-type="application/xhtml+xml"/>')
         spine.append(f'<itemref idref="{cid}"/>')
         navli.append(f'<li><a href="{href}">{esc(ch["title"])}</a></li>')
-        ncx.append(f'<navPoint id="np{i}" playOrder="{i + 1}"><navLabel><text>{esc(ch["title"])}</text></navLabel>'
+        ncx.append(f'<navPoint id="np{i}" playOrder="{i + (1 if show_info else 0)}"><navLabel><text>{esc(ch["title"])}</text></navLabel>'
                    f'<content src="{href}"/></navPoint>')
 
     if images:
