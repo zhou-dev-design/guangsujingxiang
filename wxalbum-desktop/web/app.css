@@ -257,6 +257,13 @@ html[data-theme="light"] .chip{color:#1D4ED8}
 .setv{font-size:11px;color:var(--text3);margin-top:3px;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 .setrow select{width:92px}
+.setrow-sub{padding-top:0;gap:8px}
+.setrow-sub .sm{flex:none;white-space:nowrap}
+.setrow-sub .sm:disabled{opacity:.45;cursor:default}
+.dirinput{flex:1;min-width:0;height:34px;padding:0 10px;font:inherit;font-size:12px;
+  color:var(--text);background:var(--surface2);border:1px solid var(--line2);border-radius:9px}
+.dirinput:focus{outline:none;border-color:var(--primary-line);background:var(--surface3)}
+.dirinput::placeholder{color:var(--text3)}
 .hintline{font-size:11px;color:var(--text3);margin-top:10px;line-height:1.7}
 
 /* ---------------- 进度 dock ---------------- */

@@ -984,7 +984,7 @@ def safe_replace(stage: Path, target: Path):
 
 def recover_orphans(log):
     """启动时收拾上次被中断的替换：只留 .old 就还原，残留 .part 直接删。"""
-    dirs = {OUT_DIR, Path(CONFIG.get("outdir") or OUT_DIR)}
+    dirs = {OUT_DIR, output_dir()}
     try:
         for it in WATCH.get("items", []):
             p = it.get("epub")
@@ -1535,7 +1535,7 @@ def do_update_watch(album_id):
         "title": item.get("book_title") or "",
         "author": item.get("author") or "",
         "target_path": item.get("epub") or "",
-        "outdir": str(OUT_DIR),
+        "outdir": str(output_dir()),
     })
 
 
@@ -1577,29 +1577,84 @@ def output_dir():
     return OUT_DIR
 
 
-def pick_directory(title="选择 EPUB 保存目录"):
-    """调系统原生目录选择框（tkinter 子进程），返回路径；取消返回空串。"""
-    script = (
-        "import tkinter as tk\n"
-        "from tkinter import filedialog\n"
-        "r = tk.Tk(); r.withdraw()\n"
-        "try://n"
-        "    r.attributes('-topmost', True)\n"
-        "except Exception://n"
-        "    pass\n"
-        "p = filedialog.askdirectory(title=" + repr(title) + ")\n"
-        "r.destroy()\n"
-        "print(p or '')\n"
-    )
-    try:
-        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        out = subprocess.run([sys.executable, "-c", script],
-                             capture_output=True, timeout=300, creationflags=flags)
-        txt = (out.stdout or b"").decode("utf-8", "ignore").strip()
-        return txt.splitlines()[-1].strip() if txt else ""
-    except Exception as e:
-        log("warn", f"打开目录选择框失败：{e}")
+def config_payload():
+    return {"outdir": str(output_dir()),
+            "configured": bool((CONFIG.get("outdir") or "").strip()),
+            "default_outdir": str(OUT_DIR),
+            "concurrency": int(CONFIG.get("concurrency") or recommend_concurrency()),
+            "recommend": recommend_concurrency(),
+            "max": MAX_CONCURRENCY,
+            "cpus": os.cpu_count() or 0}
+
+
+def validate_outdir(raw):
+    """把用户填的路径规范化；失败抛 ValueError，成功返回绝对路径字符串（空串表示恢复默认）。"""
+    raw = (raw or "").strip()
+    if not raw or raw.lower() in ("default", "默认"):
         return ""
+    p = Path(raw).expanduser()
+    try:
+        p.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        raise ValueError("无法创建该文件夹：%s" % e)
+    if not p.is_dir():
+        raise ValueError("这个路径不是文件夹")
+    probe = p / (".wxalbum_write_test_" + uuid.uuid4().hex[:8])
+    try:
+        probe.write_bytes(b"ok")
+        probe.unlink()
+    except Exception as e:
+        raise ValueError("该文件夹不可写：%s" % e)
+    return str(p)
+
+
+def pick_directory(title="选择 EPUB 保存目录"):
+    """调系统原生目录选择框（tkinter 独立子进程），返回 (路径, 错误)。
+
+    取消 → ("", "")；出错 → ("", 错误文本)。脚本用 join 拼行，避免换行符被误替换。
+    """
+    code = "\n".join([
+        "import sys",
+        "import tkinter as tk",
+        "from tkinter import filedialog",
+        "root = tk.Tk()",
+        "root.withdraw()",
+        "try:",
+        "    root.attributes('-topmost', True)",
+        "except Exception:",
+        "    pass",
+        "try:",
+        "    p = filedialog.askdirectory(title=" + repr(title) + ", parent=root)",
+        "finally:",
+        "    try:",
+        "        root.destroy()",
+        "    except Exception:",
+        "        pass",
+        "sys.stdout.write(p or '')",
+        "sys.stdout.flush()",
+    ])
+    exe = sys.executable
+    # pythonw.exe 无控制台，某些环境下拿不到子进程的 stdout，改用同目录的 python.exe
+    if os.name == "nt" and os.path.basename(exe).lower().startswith("pythonw"):
+        alt = Path(exe).with_name("python.exe")
+        if alt.exists():
+            exe = str(alt)
+    try:
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        out = subprocess.run([exe, "-c", code], capture_output=True, timeout=300,
+                             creationflags=flags, env=env)
+        if out.returncode != 0:
+            err = (out.stderr or b"").decode("utf-8", "ignore").strip()
+            detail = err.splitlines()[-1] if err else "退出码 %d" % out.returncode
+            return "", "目录选择框启动失败：" + detail
+        txt = (out.stdout or b"").decode("utf-8", "ignore").strip()
+        return (txt.splitlines()[-1].strip() if txt else ""), ""
+    except subprocess.TimeoutExpired:
+        return "", "选择超时（5 分钟内没有操作）"
+    except Exception as e:
+        return "", "打开目录选择框失败：%s" % e
 
 
 # ----------------------------------------------------------------------------
@@ -1965,11 +2020,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/history":
             return self._send(200, {"items": history_list()})
         if path == "/api/config":
-            return self._send(200, {"outdir": str(output_dir()),
-                                    "concurrency": int(CONFIG.get("concurrency") or recommend_concurrency()),
-                                    "recommend": recommend_concurrency(),
-                                    "max": MAX_CONCURRENCY,
-                                    "cpus": os.cpu_count() or 0})
+            return self._send(200, config_payload())
         if path == "/api/thumb":
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             u = (q.get("u") or [""])[0]
@@ -1984,8 +2035,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/download":
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             name = os.path.basename((q.get("name") or [""])[0])
-            fp = OUT_DIR / name
-            if not name or not fp.exists():
+            fp = None
+            if name:
+                for base in (output_dir(), OUT_DIR):
+                    cand = base / name
+                    if cand.is_file():
+                        fp = cand
+                        break
+            if fp is None:
                 return self._send(404, {"error": "文件不存在"})
             data = fp.read_bytes()
             fn = urllib.parse.quote(name)
@@ -2020,25 +2077,39 @@ class Handler(BaseHTTPRequestHandler):
             res = history_delete(body.get("ids") or [], body.get("mode") or "record")
             return self._send(200, {"ok": True, **res})
         if path == "/api/config":
-            if "outdir" in body and isinstance(body["outdir"], str):
-                CONFIG["outdir"] = body["outdir"].strip()
+            if "outdir" in body:
+                if not isinstance(body["outdir"], str):
+                    return self._send(400, {"error": "保存位置必须是路径文本"})
+                try:
+                    CONFIG["outdir"] = validate_outdir(body["outdir"])
+                except ValueError as e:
+                    return self._send(400, {"error": str(e)})
             if "concurrency" in body:
                 try:
                     CONFIG["concurrency"] = max(1, min(MAX_CONCURRENCY, int(body["concurrency"])))
                 except Exception:
                     pass
             save_config()
-            return self._send(200, {"ok": True, "config": {"outdir": str(output_dir()),
-                                                           "concurrency": int(CONFIG.get("concurrency") or recommend_concurrency()),
-                                                           "recommend": recommend_concurrency(),
-                                                           "max": MAX_CONCURRENCY,
-                                                           "cpus": os.cpu_count() or 0}})
+            return self._send(200, {"ok": True, "config": config_payload()})
         if path == "/api/pickdir":
-            pth = pick_directory()
-            if pth:
-                CONFIG["outdir"] = pth
-                save_config()
-            return self._send(200, {"path": pth, "outdir": str(output_dir())})
+            pth, err = pick_directory()
+            if err:
+                return self._send(200, {"ok": False, "cancelled": False,
+                                        "path": "", "error": err,
+                                        "outdir": str(output_dir())})
+            if not pth:
+                return self._send(200, {"ok": False, "cancelled": True,
+                                        "path": "", "outdir": str(output_dir())})
+            try:
+                CONFIG["outdir"] = validate_outdir(pth)
+            except ValueError as e:
+                return self._send(200, {"ok": False, "cancelled": False,
+                                        "path": "", "error": str(e),
+                                        "outdir": str(output_dir())})
+            save_config()
+            return self._send(200, {"ok": True, "cancelled": False,
+                                    "path": pth, "outdir": str(output_dir()),
+                                    "config": config_payload()})
         if path == "/api/watch/check":
             if WSTATE["checking"]:
                 return self._send(409, {"error": "正在检查中"})
@@ -2095,7 +2166,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self._send(500, {"error": str(e)})
         if path == "/api/open":
-            target = OUT_DIR
+            target = output_dir()
             if body.get("path"):
                 target = Path(body["path"]).parent
             try:

@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>公众号转 EPUB · 控制台</title>
-<link rel="stylesheet" href="/app.css?v=2"/>
+<link rel="stylesheet" href="/app.css?v=3"/>
 </head>
 <body>
 <div class="app">
@@ -186,7 +186,13 @@
               <div class="setk">保存位置</div>
               <div class="setv" id="setDir">读取中…</div>
             </div>
-            <button class="sm" id="btnChangeDir">更改</button>
+            <button class="sm" id="btnChangeDir">浏览…</button>
+          </div>
+          <div class="setrow setrow-sub">
+            <input class="dirinput" type="text" id="setDirInput" spellcheck="false"
+                   autocomplete="off" placeholder="也可直接粘贴文件夹路径，回车或点「应用」"/>
+            <button class="sm" id="btnApplyDir">应用</button>
+            <button class="sm" id="btnResetDir">恢复默认</button>
           </div>
           <div class="setrow">
             <div class="settext">
@@ -249,8 +255,8 @@
             <button class="sm" id="btnQuit">退出程序</button>
           </div>
           <div class="hintline">
-            数据都在程序目录：<code>cache/</code> 正文与图片缓存、<code>output/</code> 成品与 <code>_history/</code> 备份、
-            <code>watch.json</code> 书架、<code>history.json</code> 生成历史。
+            数据都在程序目录：<code>cache/</code> 正文与图片缓存、<code>output/</code> 成品（保存位置可自定义）、
+            <code>watch.json</code> 书架、<code>history.json</code> 生成历史。原位替换时成功不留旧版、生成失败才保留。
           </div>
         </div>
       </div>
@@ -270,6 +276,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="/app.js?v=2"></script>
+<script src="/app.js?v=3"></script>
 </body>
 </html>

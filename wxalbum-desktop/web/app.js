@@ -419,7 +419,7 @@ $('#shelfGrid').addEventListener('click', async e => {
   const id = btn.closest('.book').dataset.id;
   const act = btn.dataset.act;
   if (act === 'update') {
-    if (!confirm('更新会重新抓取新增章节并覆盖原文件，旧版自动备份到 _history。继续？')) return;
+    if (!confirm('更新会重新抓取新增章节并原位覆盖原文件；新版本生成失败时旧文件会保留。继续？')) return;
     btn.disabled = true; btn.textContent = '更新中…';
     try { await post('/api/watch/update', { album_id: id }); setTab('download'); toast('开始更新，完成前请勿关闭'); }
     catch (err) { toast('失败：' + err.message); btn.disabled = false; btn.textContent = '更新'; }
@@ -543,10 +543,17 @@ $('#btnDelBoth').onclick = () => histDelete('both', '删除文件同时删除记
 $('#btnHistOpen').onclick = () => post('/api/open', {}).catch(e => toast('打开失败：' + e.message));
 
 /* ---------------- 设置 ---------------- */
+function showDir(c) {
+  $('#setDir').textContent = (c.outdir || '默认输出目录') + (c.configured ? '' : '（默认）');
+  const inp = $('#setDirInput');
+  if (inp && document.activeElement !== inp) inp.value = c.configured ? c.outdir : '';
+  const reset = $('#btnResetDir');
+  if (reset) reset.disabled = !c.configured;
+}
 async function loadConfig() {
   try {
     cfg = await get('/api/config');
-    $('#setDir').textContent = cfg.outdir || '默认输出目录';
+    showDir(cfg);
     const sel2 = $('#optConc');
     const v = cfg.concurrency || cfg.recommend || 6;
     sel2.value = String(v);
@@ -579,9 +586,41 @@ $('#btnChangeDir').onclick = async () => {
   b.disabled = true; b.textContent = '选择中…';
   try {
     const r = await post('/api/pickdir', {});
-    if (r.outdir) { $('#setDir').textContent = r.outdir; toast('保存位置已更新'); }
+    if (r.ok && r.path) {
+      cfg = r.config || await get('/api/config');
+      showDir(cfg);
+      toast('保存位置已更新：' + r.path);
+    } else if (r.cancelled) {
+      toast('已取消，保存位置未改动');
+    } else {
+      toast(r.error || '没有选择文件夹');
+    }
   } catch (e) { toast('打开选择框失败：' + e.message); }
-  b.disabled = false; b.textContent = '更改';
+  finally { b.disabled = false; b.textContent = '浏览…'; }
+};
+$('#btnApplyDir').onclick = async () => {
+  const p = ($('#setDirInput').value || '').trim();
+  if (!p) { toast('请先填写文件夹路径，或点「恢复默认」'); return; }
+  const b = $('#btnApplyDir');
+  b.disabled = true;
+  try {
+    const r = await post('/api/config', { outdir: p });
+    cfg = r.config;
+    showDir(cfg);
+    toast('保存位置已更新：' + r.config.outdir);
+  } catch (e) { toast('设置失败：' + e.message); }
+  finally { b.disabled = false; }
+};
+$('#setDirInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); $('#btnApplyDir').click(); }
+});
+$('#btnResetDir').onclick = async () => {
+  try {
+    const r = await post('/api/config', { outdir: '' });
+    cfg = r.config;
+    showDir(cfg);
+    toast('已恢复默认输出目录');
+  } catch (e) { toast('恢复失败：' + e.message); }
 };
 $('#setImages').onchange = () => {
   try { localStorage.setItem('defImages', $('#setImages').checked ? '1' : '0'); } catch (e) {}
