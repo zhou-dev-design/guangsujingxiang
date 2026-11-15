@@ -29,7 +29,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -61,7 +60,9 @@ public class MainActivity extends Activity {
     /* 下载页 */
     private EditText inUrl, inTitle, inAuthor, inDelay;
     private CheckBox cbExpand, cbImages, cbBookinfo, cbNumbering, cbCache;
-    private Spinner spTitle;
+    private TextView btnTitleMode;
+    private int titleModePos = 0;
+    private static final String[] TITLE_MODES = {"自动识别", "正文第一行", "文章标题"};
     private LinearLayout albumCard, listCard, listBox, actionCard;
     private ImageView coverView;
     private TextView albumHint, listCount, abMain, abSub, logView, progText;
@@ -101,8 +102,11 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         pageTitle = findViewById(R.id.pageTitle);
-        pageSub = findViewById(R.id.pageSub);
         phaseChip = findViewById(R.id.phaseChip);
+        pageSub = findViewById(R.id.pageSub);
+        phaseChip.setSingleLine(true);
+        phaseChip.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        phaseChip.setMaxWidth(dp(132));
         content = findViewById(R.id.content);
 
         tabViews[0] = findViewById(R.id.tabDownload);
@@ -208,7 +212,7 @@ public class MainActivity extends Activity {
 
     private ScrollView scroll(LinearLayout box) {
         ScrollView sv = new ScrollView(this);
-        sv.setFillViewport(true);
+        sv.setFillViewport(false);
         sv.setClipToPadding(false);
         sv.setVerticalScrollBarEnabled(false);
         box.setPadding(dp(18), dp(2), dp(18), dp(28));
@@ -310,47 +314,51 @@ public class MainActivity extends Activity {
         albumCard.addView(ar, lpTop(dp(2)));
         box.addView(albumCard, cardLp(10));
 
-        // 选项卡
+        // 选项卡：拆成三行，避免窄屏把「标题序号」挤成竖排
         LinearLayout c3 = Ui.card(this);
         c3.addView(header("选项", "默认不带插图"));
+
         LinearLayout o1 = Ui.row(this);
         cbImages = check("下载插图", prefs.images);
         cbBookinfo = check("书籍信息页", prefs.bookinfo);
-        cbNumbering = check("标题序号", true);
         o1.addView(cbImages);
-        o1.addView(cbBookinfo, lpLeft(dp(12)));
-        o1.addView(cbNumbering, lpLeft(dp(12)));
+        o1.addView(cbBookinfo, lpLeft(dp(16)));
         c3.addView(o1);
 
         LinearLayout o2 = Ui.row(this);
-        o2.setPadding(0, dp(10), 0, 0);
+        o2.setPadding(0, dp(8), 0, 0);
+        cbNumbering = check("标题序号", true);
+        o2.addView(cbNumbering);
+        LinearLayout.LayoutParams spring = new LinearLayout.LayoutParams(0, 1, 1f);
+        o2.addView(new View(this), spring);
         o2.addView(Ui.text(this, "间隔", Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText2, false));
         inDelay = edit("0.5");
         inDelay.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         inDelay.setText("0.5");
-        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(64), ViewGroup.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(56), ViewGroup.LayoutParams.WRAP_CONTENT);
         dlp.leftMargin = dp(6);
         o2.addView(inDelay, dlp);
         o2.addView(Ui.text(this, "秒", Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText3, false), lpLeft(dp(4)));
-
-        TextView tl = Ui.text(this, "标题", Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText2, false);
-        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        tlp.leftMargin = dp(14);
-        o2.addView(tl, tlp);
-
-        spTitle = new Spinner(this);
-        ArrayAdapter<String> ad = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item,
-                new String[]{"自动识别", "正文第一行", "文章标题"});
-        ad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spTitle.setAdapter(ad);
-        spTitle.setBackgroundResource(R.drawable.bg_input);
-        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(dp(120),
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        slp.leftMargin = dp(6);
-        o2.addView(spTitle, slp);
         c3.addView(o2);
+
+        LinearLayout o3 = Ui.row(this);
+        o3.setPadding(0, dp(10), 0, 0);
+        o3.addView(Ui.text(this, "标题", Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText2, false));
+        btnTitleMode = Ui.text(this, TITLE_MODES[titleModePos],
+                Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText, false);
+        btnTitleMode.setBackgroundResource(R.drawable.bg_input);
+        btnTitleMode.setGravity(Gravity.CENTER);
+        btnTitleMode.setClickable(true);
+        btnTitleMode.setFocusable(true);
+        btnTitleMode.setPadding(dp(10), dp(8), dp(10), dp(8));
+        btnTitleMode.setOnClickListener(v -> {
+            titleModePos = (titleModePos + 1) % TITLE_MODES.length;
+            btnTitleMode.setText(TITLE_MODES[titleModePos]);
+        });
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        tlp.leftMargin = dp(8);
+        o3.addView(btnTitleMode, tlp);
+        c3.addView(o3);
         box.addView(c3, cardLp(10));
 
         // 章节卡
@@ -516,8 +524,7 @@ public class MainActivity extends Activity {
         o.images = cbImages.isChecked();
         o.bookinfo = cbBookinfo.isChecked();
         o.numbering = cbNumbering.isChecked();
-        o.titlemode = spTitle.getSelectedItemPosition() == 1 ? "first"
-                : spTitle.getSelectedItemPosition() == 2 ? "article" : "auto";
+        o.titlemode = titleModePos == 1 ? "first" : titleModePos == 2 ? "article" : "auto";
         o.title = inTitle.getText().toString().trim();
         o.author = inAuthor.getText().toString().trim();
         try {
@@ -762,23 +769,34 @@ public class MainActivity extends Activity {
     /* ==================== 书架 ==================== */
 
     private View buildShelf() {
-        LinearLayout box = Ui.column(this);
+        LinearLayout root = Ui.column(this);
+        root.setPadding(dp(18), dp(2), dp(18), 0);
+
         LinearLayout c = Ui.card(this);
         LinearLayout h = Ui.row(this);
         h.addView(Ui.section(this, "书籍追踪"));
-        LinearLayout.LayoutParams hw = new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        h.addView(new View(this), hw);
+        h.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         btnCheck = Ui.smallButton(this, "检查更新");
         h.addView(btnCheck);
         c.addView(h);
         shelfHint = Ui.text(this, "生成过的合集会自动加入这里",
                 Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText3, false);
-        shelfHint.setPadding(0, dp(4), 0, dp(10));
+        shelfHint.setPadding(0, dp(4), 0, 0);
         c.addView(shelfHint);
+        root.addView(c, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        ScrollView sv = new ScrollView(this);
+        sv.setClipToPadding(false);
+        sv.setVerticalScrollBarEnabled(false);
+        sv.setPadding(0, dp(10), 0, 0);
         shelfBox = Ui.column(this);
-        c.addView(shelfBox);
-        box.addView(c);
+        shelfBox.setPadding(0, 0, 0, dp(24));
+        sv.addView(shelfBox, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        root.addView(sv, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
         btnCheck.setOnClickListener(v -> {
             toast("正在检查更新…");
             Engine.I.checkWatch(this, (ok, msg) -> {
@@ -788,7 +806,7 @@ public class MainActivity extends Activity {
             });
             refresh();
         });
-        return scroll(box);
+        return root;
     }
 
     private void renderShelf() {
@@ -813,7 +831,7 @@ public class MainActivity extends Activity {
             TextView e = Ui.text(this, "书架还是空的\n生成一本合集后会自动出现在这里",
                     Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText3, false);
             e.setGravity(Gravity.CENTER);
-            e.setPadding(0, dp(28), 0, dp(28));
+            e.setPadding(dp(10), dp(48), dp(10), dp(48));
             shelfBox.addView(e);
             return;
         }
@@ -926,13 +944,13 @@ public class MainActivity extends Activity {
     /* ==================== 历史 ==================== */
 
     private View buildHistory() {
-        LinearLayout box = Ui.column(this);
+        LinearLayout root = Ui.column(this);
+        root.setPadding(dp(18), dp(2), dp(18), 0);
+
         LinearLayout c = Ui.card(this);
         LinearLayout h = Ui.row(this);
         h.addView(Ui.section(this, "生成历史"));
-        LinearLayout.LayoutParams hw = new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        h.addView(new View(this), hw);
+        h.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         TextView refreshBtn = Ui.smallButton(this, "刷新");
         refreshBtn.setOnClickListener(v -> {
             Engine.I.loadStores(this);
@@ -946,27 +964,40 @@ public class MainActivity extends Activity {
         histInfo.setPadding(0, dp(4), 0, dp(8));
         c.addView(histInfo);
 
+        // 按钮横排，放不下就横向滚动，不会被挤压换行
+        android.widget.HorizontalScrollView hs = new android.widget.HorizontalScrollView(this);
+        hs.setHorizontalScrollBarEnabled(false);
         LinearLayout tools = Ui.row(this);
-        tools.setPadding(0, 0, 0, dp(10));
         String[] names = {"全选", "清空", "删记录", "删文件", "文件+记录"};
         for (int i = 0; i < names.length; i++) {
             final String mode = names[i];
             TextView b;
             if (mode.startsWith("删") || mode.startsWith("文件")) b = Ui.dangerButton(this, mode);
             else b = Ui.smallButton(this, mode);
-            b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, Ui.dim(this, R.attr.dT0, 10));
             b.setOnClickListener(v -> historyAction(mode));
             LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             if (i > 0) bp.leftMargin = dp(6);
             tools.addView(b, bp);
         }
-        c.addView(tools);
+        hs.addView(tools, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        c.addView(hs, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        root.addView(c, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        ScrollView sv = new ScrollView(this);
+        sv.setClipToPadding(false);
+        sv.setVerticalScrollBarEnabled(false);
+        sv.setPadding(0, dp(10), 0, 0);
         histBox = Ui.column(this);
-        c.addView(histBox);
-        box.addView(c);
-        return scroll(box);
+        histBox.setPadding(0, 0, 0, dp(24));
+        sv.addView(histBox, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        root.addView(sv, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        return root;
     }
 
     private void historyAction(String mode) {
@@ -1032,7 +1063,7 @@ public class MainActivity extends Activity {
             TextView e = Ui.text(this, "还没有生成记录\n生成一本书后会在这里留一条",
                     Ui.dim(this, R.attr.dT1, 11.5f), R.attr.cText3, false);
             e.setGravity(Gravity.CENTER);
-            e.setPadding(0, dp(28), 0, dp(28));
+            e.setPadding(dp(10), dp(48), dp(10), dp(48));
             histBox.addView(e);
             return;
         }

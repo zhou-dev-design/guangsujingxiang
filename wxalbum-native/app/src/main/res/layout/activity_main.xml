@@ -51,9 +51,10 @@
             android:layout_marginStart="10dp"
             android:background="@drawable/bg_chip"
             android:gravity="center"
-            android:maxWidth="150dp"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
+            android:maxWidth="132dp"
+            android:paddingStart="9dp"
+            android:paddingEnd="9dp"
+            android:maxLines="1"
             android:singleLine="true"
             android:ellipsize="end"
             android:text="准备就绪"
@@ -122,7 +123,7 @@
                 android:id="@+id/icoShelf"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
-                android:src="@drawable/ic_tab_watch"
+                android:src="@drawable/ic_shelf"
                 android:contentDescription="@string/tab_shelf" />
 
             <TextView
