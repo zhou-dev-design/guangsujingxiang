@@ -63,15 +63,10 @@ release/       三个成品
 build.sh       一键构建脚本
 ```
 
-## 同一个仓库里还有
+## 别的分支
 
-`wxalbum-*` 是另一个小工具：把公众号「合集」链接里的图文批量抓下来，合成一本带封面和目录的 EPUB（微信读书 / Apple Books / Kindle 都能读）。
-
-| 目录 | 说明 |
-| --- | --- |
-| `wxalbum-desktop/` | 电脑端，纯 Python 标准库，启动后在浏览器里操作 |
-| `wxalbum-android/` | 安卓端，WebView 套壳复用同一套逻辑 |
-| `wxalbum-native/` | 安卓原生版，纯 Java 实现，额外做了墨水屏适配 |
+`wxalbum` 分支是另一个小工具：把公众号「合集」链接里的图文批量抓下来，合成带封面和目录的 EPUB。
+电脑端、安卓端都有，构建产物见该分支的 Release。
 
 ## 构建
 

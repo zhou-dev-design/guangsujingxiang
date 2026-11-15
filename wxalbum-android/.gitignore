@@ -1,5 +1,0 @@
-keystore/*.p12
-keystore/*.jks
-build/
-.gradle/
-local.properties
