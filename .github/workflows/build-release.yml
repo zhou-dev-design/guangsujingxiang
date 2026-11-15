@@ -140,11 +140,17 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -uo pipefail
-          # 同 tag 的旧发布先删（保留 tag），其它 tag 的发布连 tag 一起删
+          # 同 tag 的旧发布先删（保留 tag）；只清理本项目自己的旧版本 tag（v*）。
+          # 本仓库的 wxalbum 分支是「公众号转EPUB」，其 wxalbum-* 发布由那边的
+          # 两条 workflow 独立维护，这里一律不动，避免两个分支的 Release 互相清掉。
           gh release delete "$TAG" --yes 2>/dev/null || true
           gh release list --limit 100 --json tagName --jq '.[].tagName' | while read -r t; do
             [ -z "$t" ] && continue
             [ "$t" = "$TAG" ] && continue
+            case "$t" in
+              v*) ;;
+              *) echo "跳过其它分支的发布：$t"; continue ;;
+            esac
             echo "删除旧发布：$t"
             gh release delete "$t" --yes --cleanup-tag 2>/dev/null || true
           done
