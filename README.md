@@ -151,7 +151,18 @@ cd wxalbum-android && gradle assembleDebug     # 旧版
 | `wxalbum-native.yml` | `wxalbum-native/**` | `wxalbum-native-latest` | `wxalbum-native.apk` |
 | `wxalbum-apk.yml` | `wxalbum-android/**` | `wxalbum-apk-latest` | `app-debug.apk` |
 
-只有推送到 **`wxalbum` 分支**才会发布 Release；也支持在 Actions 页面手动 `workflow_dispatch`。编译失败时日志会推到 `ci-logs` 分支。桌面端改动**不会**触发 APK 构建。
+只有推送到 **`wxalbum` 分支**才会发布 Release；也支持在 Actions 页面手动 `workflow_dispatch`。编译失败时日志会推到 `ci-logs` 分支。桌面端改动**不会**触发 APK 构建。两条 workflow 都设了 `make_latest: false`，不会去抢仓库的 Latest 标记。
+
+### 与 `main` 分支的 Release 互不干扰
+
+GitHub 的 Release 属于**仓库**而不是分支，绑在 tag 上，所以两个项目的发布仍会列在同一个 Releases 页面，靠 tag 前缀区分：
+
+| 分支 | tag | 内容 |
+| --- | --- | --- |
+| `wxalbum` | `wxalbum-native-latest` / `wxalbum-apk-latest` | 公众号转EPUB 的两个 APK |
+| `main` | `v*`（如 `v3.0.0`） | 光速镜像的 APK 与桌面 exe |
+
+`main` 分支发版时会清理自己的旧 `v*` Release，但**只匹配 `v*` 前缀**，`wxalbum-*` 一律跳过；反过来本分支的两条 workflow 也只操作自己的两个 tag。两边发布流程互不干扰。若以后要更彻底地分开（各自独立的 Releases 页面），只能把 `wxalbum` 拆成单独仓库。
 
 ## 测试
 
