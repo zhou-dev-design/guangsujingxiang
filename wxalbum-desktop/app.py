@@ -941,6 +941,78 @@ class ImageStore:
         return name
 
 
+def verify_epub(path: Path, expect: int):
+    """新版本自检：体积、mimetype、content.opf、章节数、CRC。任一不过就当生成出问题。"""
+    if not path.exists() or path.stat().st_size < 512:
+        detail = "没写出来" if not path.exists() else f"{path.stat().st_size} 字节"
+        raise RuntimeError(f"新版本文件异常（{detail}），旧版本已保留")
+    try:
+        with zipfile.ZipFile(path) as z:
+            names = set(z.namelist())
+            if "mimetype" not in names:
+                raise RuntimeError("新版本不是有效 EPUB（缺 mimetype），旧版本已保留")
+            if "OEBPS/content.opf" not in names:
+                raise RuntimeError("新版本不完整（缺 content.opf），旧版本已保留")
+            chap = sum(1 for n in names if n.startswith("OEBPS/Text/chap"))
+            broken = z.testzip()   # 逐条校验 CRC，抓出被截断/写坏的条目
+    except zipfile.BadZipFile:
+        raise RuntimeError("新版本压缩包损坏（无法解压），旧版本已保留")
+    if broken:
+        raise RuntimeError(f"新版本压缩包损坏（{broken} CRC 错误），旧版本已保留")
+    if chap == 0:
+        raise RuntimeError("新版本不含任何章节，旧版本已保留")
+    if chap < expect:
+        raise RuntimeError(f"新版本章节数不足（{chap}/{expect}），旧版本已保留")
+
+
+def safe_replace(stage: Path, target: Path):
+    """临时文件已自检通过才调用：替换成功不留旧版；替换失败回滚，旧版原样留下。"""
+    if not target.exists():
+        stage.replace(target)
+        return
+    bak = target.with_name(target.name + ".old")
+    if bak.exists():
+        bak.unlink()
+    target.replace(bak)
+    try:
+        stage.replace(target)
+    except Exception:
+        bak.replace(target)
+        raise RuntimeError("替换失败，已回滚到旧版本")
+    bak.unlink(missing_ok=True)   # 新版本已就位，旧版本不保留
+
+
+def recover_orphans(log):
+    """启动时收拾上次被中断的替换：只留 .old 就还原，残留 .part 直接删。"""
+    dirs = {OUT_DIR, Path(CONFIG.get("outdir") or OUT_DIR)}
+    try:
+        for it in WATCH.get("items", []):
+            p = it.get("epub")
+            if p:
+                dirs.add(Path(p).parent)
+    except Exception:
+        pass
+    fixed = 0
+    for d in dirs:
+        try:
+            for p in d.iterdir():
+                n = p.name
+                if n.endswith(".epub.old"):
+                    base = p.with_name(n[:-4])
+                    if not base.exists():
+                        p.replace(base)
+                        fixed += 1
+                    else:
+                        p.unlink(missing_ok=True)
+                elif n.endswith(".part"):
+                    p.unlink(missing_ok=True)
+        except Exception:
+            pass
+    if fixed:
+        log("info", f"已还原上次中断留下的旧版本 {fixed} 本")
+    return fixed
+
+
 def build_epub(album, chapters, opts, out_dir, log):
     """chapters: [{'title','blocks','no','account','publish'}]"""
     title = opts.get("title") or album.get("title") or "公众号合集"
@@ -1167,39 +1239,45 @@ def build_epub(album, chapters, opts, out_dir, log):
     out_dir.mkdir(parents=True, exist_ok=True)
     target = opts.get("target_path")
     if target:
-        # 追踪更新：直接覆盖原文件，旧版先备份到 _history
+        # 追踪更新：原位替换。先写同目录临时文件，自检通过才动原文件；
+        # 生成出问题 → 原文件分毫不动（自动留下旧版），成功 → 旧版不保留
         out_path = Path(target)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        if out_path.exists():
-            hist = out_path.parent / "_history"
-            hist.mkdir(parents=True, exist_ok=True)
-            ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            try:
-                shutil.copy2(out_path, hist / f"{out_path.stem}__{ts}.epub")
-                backups = sorted(hist.glob(f"{out_path.stem}__*.epub"))
-                for old_b in backups[:-3]:
-                    old_b.unlink(missing_ok=True)
-                log("info", f"旧版已备份到 _history（保留最近 3 份）")
-            except Exception as e:
-                log("warn", f"备份旧版失败：{e}")
+        replacing = out_path.exists()
     else:
         out_path = out_dir / f"{safe_name(title)}.epub"
         n = 2
         while out_path.exists():
             out_path = out_dir / f"{safe_name(title)} ({n}).epub"
             n += 1
+        replacing = False
 
-    with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as z:
-        zi = zipfile.ZipInfo("mimetype", date_time=(2020, 1, 1, 0, 0, 0))
-        zi.compress_type = zipfile.ZIP_STORED
-        z.writestr(zi, "application/epub+zip")
-        z.writestr("META-INF/container.xml", """<?xml version="1.0" encoding="utf-8"?>
+    stage = out_path.with_name("." + out_path.name + ".part") if replacing else out_path
+    old_size = out_path.stat().st_size if replacing else 0
+    try:
+        with zipfile.ZipFile(stage, "w", zipfile.ZIP_DEFLATED) as z:
+            zi = zipfile.ZipInfo("mimetype", date_time=(2020, 1, 1, 0, 0, 0))
+            zi.compress_type = zipfile.ZIP_STORED
+            z.writestr(zi, "application/epub+zip")
+            z.writestr("META-INF/container.xml", """<?xml version="1.0" encoding="utf-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
 <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
 </container>""")
-        for name, content in files.items():
-            data = content.encode("utf-8") if isinstance(content, str) else content
-            z.writestr("OEBPS/" + name, data)
+            for name, content in files.items():
+                data = content.encode("utf-8") if isinstance(content, str) else content
+                z.writestr("OEBPS/" + name, data)
+
+        if replacing:
+            verify_epub(stage, total)
+            safe_replace(stage, out_path)
+            log("info", f"校验通过，已原位替换（旧版 {old_size/1024:.0f} KB → "
+                        f"新版 {out_path.stat().st_size/1024:.0f} KB），旧版不保留")
+    finally:
+        if replacing and stage.exists():
+            try:
+                stage.unlink()
+            except Exception:
+                pass
 
     size = out_path.stat().st_size
     log("ok", f"已生成：{out_path.name}（{size/1024/1024:.1f} MB，{total} 篇）")
@@ -1878,6 +1956,8 @@ class Handler(BaseHTTPRequestHandler):
             if p.exists():
                 mt = "text/javascript; charset=utf-8" if p.suffix == ".js" else "text/css; charset=utf-8"
                 return self._send(200, p.read_bytes(), mt)
+        if path == "/api/ping":
+            return self._send(200, {"app": "wxalbum", "version": 3})
         if path == "/api/state":
             return self._send(200, snapshot())
         if path == "/api/watch":
@@ -2043,10 +2123,34 @@ def find_port(start=8765, tries=30):
     return start
 
 
+def find_running(start=8765, tries=30):
+    """端口已被占用且确实是本程序在跑 → 返回它的端口，避免双击快捷方式开出第二个实例。"""
+    for p in range(start, start + tries):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", p)) != 0:
+                continue
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{p}/api/ping", timeout=0.4) as r:
+                if json.loads(r.read().decode("utf-8")).get("app") == "wxalbum":
+                    return p
+        except Exception:
+            pass
+    return None
+
+
 def serve(port=None, open_browser=True):
     load_watch()
     load_config()
     load_history()
+    recover_orphans(log)
+    if not port:
+        running = find_running()
+        if running:
+            url = f"http://127.0.0.1:{running}/"
+            print(f"下载器已在运行，直接打开控制台：{url}")
+            if open_browser:
+                webbrowser.open(url)
+            return
     if watch_items() and should_auto_check():
         threading.Timer(2.5, lambda: threading.Thread(target=do_check_watch, daemon=True).start()).start()
     port = port or find_port()
@@ -2098,6 +2202,7 @@ if __name__ == "__main__":
     load_watch()
     load_config()
     load_history()
+    recover_orphans(log)
     if a.cli:
         sys.exit(run_cli(a.cli, a.limit, a.delay, not a.no_images, a.out, a.title, a.author,
                          not a.no_expand, not a.no_bookinfo))
